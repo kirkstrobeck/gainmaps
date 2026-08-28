@@ -1,0 +1,33 @@
+# --- large / generated artifacts ---
+.git
+node_modules
+**/node_modules
+
+# Next.js build output
+.next
+apps/web/.next
+apps/web/.next-prod
+
+# Build artifacts
+dist
+**/dist
+
+# Coverage
+coverage
+**/coverage
+
+# Turbo cache
+.turbo
+**/.turbo
+
+# Sandbox credentials / cache
+tools/sandbox/.cache
+
+# Playwright
+playwright-report
+test-results
+**/playwright-report
+**/test-results
+
+# Misc dev files
+*.log

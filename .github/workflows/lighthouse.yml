@@ -1,0 +1,56 @@
+name: Lighthouse
+
+on:
+  workflow_dispatch:
+  # Uncomment the block below once all category scores reach 100 to enforce on every PR:
+  # pull_request:
+  #   branches: [main]
+
+jobs:
+  lighthouse:
+    name: Lighthouse (${{ matrix.preset }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [desktop, mobile]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.15.0"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web app
+        run: pnpm -C apps/web build:isolated
+
+      - name: Start production server
+        run: |
+          pnpm -C apps/web start:isolated &
+          npx wait-on http://localhost:3000 --timeout 30000
+
+      - name: Run Lighthouse (${{ matrix.preset }})
+        run: |
+          pnpm exec lhci autorun --config="tools/lighthouse/lhci-${{ matrix.preset }}.cjs"
+        env:
+          LHCI_BUILD_CONTEXT__CURRENT_HASH: ${{ github.sha }}
+
+      - name: Upload Lighthouse report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-${{ matrix.preset }}
+          path: .lhci-reports/${{ matrix.preset }}/
+          retention-days: 30

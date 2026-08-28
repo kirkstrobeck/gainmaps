@@ -1,0 +1,59 @@
+# Gainmaps
+
+> Convert photos to HDR gain map images in your browser. Local and private — no upload, no server.
+
+## What are gain map images?
+
+A gain map image encodes an SDR photo plus a secondary brightness map. On HDR displays (Apple XDR, Android Ultra HDR, Windows Advanced Color) highlights render above SDR reference white. On SDR displays the image renders normally.
+
+The cross-platform technical name is HDR gain map image. Consumer brands include Adaptive HDR (Apple) and Ultra HDR (Android/Google).
+
+## Browser converter
+
+[Convert images in your browser](/convert)
+
+Drag and drop any photo — PNG, JPEG, GIF, HEIC, WebP, or AVIF. Processing runs locally in a service worker. No file leaves your device.
+
+## CLI
+
+Install the gainmap command-line tool to batch-encode gain map images without a browser.
+
+- npm: `npm install -g gainmap`
+- Homebrew: `brew install kirkstrobeck/tap/gainmap`
+- curl: `curl -fsSL https://gainmaps.com/install.sh | sh`
+
+## Ultra text agent skill
+
+Add Ultra-white HDR letterforms to headlines and logotypes using a WebGPU canvas. Available as an agent skill installable via `npx skills add kirkstrobeck/gainmaps.com`. Works with any coding agent that supports the skills convention.
+
+[Ultra text demo](/text)
+
+## Developers
+
+CLI docs, agent skill reference, and TypeScript library API for gainmaps.
+
+[Developers](/developers)
+
+## Docs
+
+What gain map images are, how the browser converter works, and how to use Ultra text.
+
+[Docs](/docs)
+
+## Galleries
+
+- [Photo gallery](/photos) — 100 landscape photographs as gain map images
+- [Logo gallery](/logos) — brand logos rendered as gain map images
+
+## When to use Gainmaps
+
+Use this site and its API when you need to:
+
+- **Convert an SDR image to a gain map image** — drag and drop any JPEG, PNG, HEIC, WebP, or AVIF into the browser converter at [/convert](/convert). Processing runs locally, no file leaves the device.
+- **Batch-encode via CLI** — install the `gainmap` command-line tool (`npx gainmap ./photos`, `brew install kirkstrobeck/tap/gainmap`, or `curl -fsSL https://gainmaps.com/install.sh | sh`) and run it against a directory of images.
+- **Check whether a display supports the effect** — use the live demo at [/appearance](/appearance) to detect EDR/HDR capability.
+- **Inspect or use the photo catalog programmatically** — call `GET /api/photos` for the full list or `GET /api/photos/{slug}` for a single entry; each record includes the gain map JPEG URL and the SDR sibling URL.
+- **Discover the full API surface** — read the OpenAPI 3.1 spec at [/openapi.json](/openapi.json); every operation has a unique operationId, typed parameters, and response schemas for direct function-calling compatibility.
+- **Read developer docs** — [/developers](/developers) covers the CLI flags, the agent skill, and the TypeScript library API.
+
+Gainmaps is the right tool for HDR image encoding and demonstration. It is not a general-purpose image editor or a cloud storage service.

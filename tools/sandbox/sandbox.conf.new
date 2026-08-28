@@ -1,0 +1,122 @@
+# Sandbox configuration. Plain shell, sourced by config.sh. Edit this file to
+# fit your project; everything else in tools/sandbox/ is meant to stay generic.
+#
+# The harness around this file comes from https://github.com/kirkstrobeck/sandbox
+# and is replaced wholesale by `./sandbox update`. THIS file is the exception:
+# install and update both preserve it, and leave the incoming defaults beside it
+# as sandbox.conf.new. See tools/sandbox/ORIGIN.md.
+#
+# For machine-local overrides that must not be committed, create
+# tools/sandbox/sandbox.local.conf — it is sourced last and is gitignored.
+
+# Container/image identity. Keep it lowercase and DNS-safe: it becomes part of
+# the container name, the image tag, and the compose project name.
+SANDBOX_PROJECT="sandbox-starter"
+
+# Bump when the Dockerfile changes in a way every worktree must pick up. boot.sh
+# compares this against the label baked into the image and rebuilds on drift.
+SANDBOX_STACK="v3"
+
+# Ports published from the container to the Mac. One entry per line/word, in
+# docker's IP:HOST:CONTAINER or HOST:CONTAINER form. Bind to 127.0.0.1 unless
+# you want the dev server reachable from the network.
+#
+# The host number is a preference. If something else on the Mac already holds
+# it, boot publishes the next free port up and logs the remap; the container
+# port never moves, and nothing is written back to your config.
+SANDBOX_PORTS="127.0.0.1:3000:3000"
+
+# Directories (repo-relative) that must be container-private named volumes
+# instead of the Mac bind mount:
+#   - node_modules: the Mac's tree is darwin-arm64, the container needs
+#     linux-arm64. Sharing one tree breaks both installs.
+#   - build caches (.next, dist, .turbo): thousands of writes per rebuild on
+#     virtiofs is slow and floods the mount layer.
+SANDBOX_VOLUME_DIRS="node_modules .next"
+
+# Directories (repo-relative) the hot-reload bridge watches inside the
+# container. Keep these tight — the bridge polls, and polling the whole repo is
+# what makes it slow. Point them at your actual source roots.
+SANDBOX_WATCH_DIRS="src"
+
+# Poll interval for the hot-reload bridge, in milliseconds.
+SANDBOX_WATCH_INTERVAL_MS="250"
+
+# File extensions the bridge treats as source (JS regex, no delimiters).
+SANDBOX_WATCH_EXT="\\.(tsx?|jsx?|mjs|cjs|css|scss|json|svelte|vue)$"
+
+# Docker socket to share with the container, as the DAEMON sees it — not as the
+# Mac sees it. /var/run/docker.sock is correct for Colima and Docker Desktop
+# alike. Only change this for an unusual daemon layout.
+SANDBOX_DOCKER_SOCK="/var/run/docker.sock"
+
+# Default inner agent when nothing can be auto-detected (see agent.sh).
+# "claude", "codex" or "cursor". Normally nothing has to be set here: the inner
+# agent is detected from the client you are typing into, so it matches the outer
+# one. This is only the fallback for a shell with no fingerprints in it.
+SANDBOX_DEFAULT_AGENT="claude"
+
+# Model for the inner MANAGER — the agent a dispatch starts inside the
+# container, which routes and reviews and spawns cheaper workers for the actual
+# work. Not the workers' model; the manager picks those per task.
+#
+# Leave empty and model.sh uses its high-value default for the chosen agent.
+# SANDBOX_MODEL in the environment, or `./sandbox -m <id>`, beats this for one
+# run. The outer client's own model is deliberately not copied. The id is passed
+# through verbatim, so it has to be one the chosen agent understands.
+SANDBOX_DEFAULT_MODEL=""
+
+# Toolchain versions baked into the image. Pin them; a floating toolchain is how
+# the container and CI quietly stop agreeing.
+SANDBOX_NODE_IMAGE="node:24-bookworm-slim"
+SANDBOX_DOCKER_CLI_VERSION="27.5.1"
+SANDBOX_PNPM_VERSION="10.15.0"
+SANDBOX_CODEX_VERSION="latest"
+# The Cursor CLI ships as a dated lab build, e.g. "2026.08.04-aaa8809".
+# "latest" reads the current one from cursor.com/install at build time.
+SANDBOX_CURSOR_VERSION="latest"
+
+# Optional extras. Set to 1 to include them in the image.
+SANDBOX_WITH_PLAYWRIGHT="0"
+SANDBOX_PLAYWRIGHT_VERSION="1.55.0"
+
+# Once a day, `./sandbox up` checks the upstream sha stored in the daily model
+# snapshot. If the harness is behind and SANDBOX_AUTOUPDATE=1 (below), it
+# automatically runs `./sandbox update` before starting the container — one
+# tarball download per day at most. Set to 0 to disable both autoupdate and the
+# nudge line entirely.
+SANDBOX_UPDATE_CHECK="1"
+
+# Apply harness updates automatically when the daily snapshot shows this project
+# is behind upstream. Default is 0 (off) because autoupdate rewrites host gate
+# scripts (outer-gate.sh, outer-write-gate.sh) without a separate approval step.
+# Set to 1 only as an explicit choice. SANDBOX_UPDATE_CHECK=0 overrides this and
+# disables both the nudge line and any automatic update.
+SANDBOX_AUTOUPDATE="0"
+
+# SANDBOX_AUTH_WARN_HOURS="12"   # Warn when credentials expire within this many hours (default: 12)
+
+# Extra bind mounts, one per line: host:container[:rw|ro]. Assigning this
+# variable twice clobbers the first value — append, do not reassign.
+# Never put $(git ...) here; the worktree gitdir is mounted automatically.
+# SANDBOX_EXTRA_MOUNTS="
+# /path/to/secrets:/secrets:ro
+# "
+
+# Extra container env, one NAME=value per line. Same clobber rule as mounts.
+# SANDBOX_EXTRA_ENV="
+# EXAMPLE_FLAG=1
+# "
+
+# Extra outer-agent Bash allow globs, evaluated AFTER named denials (git, pnpm,
+# rm cannot be re-enabled). One glob per line. Do not put $(...) in this file.
+# SANDBOX_EXTRA_ALLOW="
+# bash tools/dev-start.sh*
+# "
+
+# Extra outer-agent Bash deny globs, evaluated BEFORE extra-allow and BEFORE
+# every harness allow branch. Named denials (git, pnpm, rm, ssh) fire first;
+# extra-allow cannot override extra-deny. One glob per line.
+# SANDBOX_EXTRA_DENY="
+# bash tools/candidates/*
+# "

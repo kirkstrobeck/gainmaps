@@ -1,0 +1,101 @@
+.reports/
+.lhci-reports/
+node_modules/
+.next/
+.pnpm-store/
+.turbo/
+**/.turbo/
+test-results/
+**/test-results/
+playwright-report/
+**/playwright-report/
+*.tsbuildinfo
+
+# Logs
+*.log
+**/coverage/
+
+# Environment
+.env
+.env.*
+.env.production
+.env*.local
+!.env.example
+
+# macOS
+.DS_Store
+
+# Built service worker — regenerate with `pnpm --filter @ultra/web build:worker`.
+apps/web/public/hdr-service-worker.js
+apps/web/public/demo/
+
+# Scratch / run logs
+tmp/
+tmp-screens/
+
+# Window-gain calibration scratch + compiled Swift helpers
+tmp-window-gain/
+
+# Ultra HDR spike sandbox (regenerate locally)
+foo/
+tools/window-gain/compare-hdr
+tools/window-gain/calibrate
+fixtures/window/
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# Tool output — regenerate with `npm run cli -- assign <fixture>`.
+# The untagged fixtures are tracked; the tagged results are not.
+*-pq.png
+*-pq.jpg
+*-rec2020.png
+*-rec2020.jpg
+*-tagged.png
+*-tagged.jpg
+*-softened.png
+.vercel
+
+# sandbox credentials and run state — never commit
+tools/sandbox/.cache/
+tools/sandbox/sandbox.local.conf
+tools/sandbox/.install-hashes
+
+# gainmap CLI build output
+packages/gainmap/dist/
+packages/gainmap/*.tgz
+.env*
+
+# Lighthouse CI output
+.lighthouseci/
+reports/
+
+# tools local node_modules (symlink)
+tools/node_modules
+
+# Agent answer file and lighthouse logs
+.agent-answer.md
+.lh-*.log
+.next-prod/
+apps/web/.next-prod
+apps/web/.next-prod.pid
+apps/web/.next-prod-OLD/
+apps/web/.next-prod-OLD2/
+**/.next-prod-OLD*/
+apps/web/tmp/
+
+# Throwaway font-transfer measurement scripts
+measure-fonts*.cjs
+measure-fonts*.mjs
+
+# Local Product Hunt launch kit
+misc/product-hunt/
+
+GOAL.md
+
+# Next.js dev-server runtime state (SQLite database)
+apps/web/core
+
+# Vitest exclusive lockfiles — prevent concurrent runs from corrupting coverage
+.vitest.lock
+apps/web/.vitest.lock

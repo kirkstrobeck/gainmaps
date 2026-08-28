@@ -1,0 +1,33 @@
+/* Ultra HDR text effect - add to your globals.css */
+
+.ultra-fill {
+  dynamic-range-limit: inherit;
+}
+
+html[data-ultra="on"] .ultra-fill {
+  display: block;
+  dynamic-range-limit: no-limit;
+}
+
+html[data-ultra="off"] .ultra-fill,
+.ultra-fill {
+  display: none;
+}
+
+.ultra-word {
+  overflow: clip;
+  overflow-clip-margin: content-box;
+}
+
+.ultra-mask-defs {
+  opacity: 0;
+  z-index: 0;
+}
+
+.ultra-word > .ultra-fill-foundation {
+  z-index: 1;
+}
+
+.ultra-word > .ultra-fill-inner {
+  z-index: 3;
+}

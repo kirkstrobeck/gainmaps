@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "failClosed": true,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": ".cursor/hooks/sandbox-shell.sh"
+      }
+    ],
+    "preToolUse": [
+      {
+        "matcher": "Write",
+        "command": ".cursor/hooks/sandbox-write.sh"
+      },
+      {
+        "matcher": "Delete",
+        "command": ".cursor/hooks/sandbox-write.sh"
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": ".cursor/hooks/sandbox-read.sh"
+      }
+    ]
+  }
+}

@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# The one command. Everything else is an implementation detail.
+#
+#   ./sandbox "add a health check endpoint"   send work to the inner agent
+#   ./sandbox -c "now add a test for it"      continue the same thread
+#   ./sandbox -a claude|codex|cursor "task"   pick the inner agent for one run
+#   ./sandbox -m <model-id> "task"            pin the manager model for one run
+#   ./sandbox result                          re-read the last answer
+#   ./sandbox tail -f                         watch the inner agent work
+#   ./sandbox up                              start the container
+#   ./sandbox shell                           get a shell inside it
+#   ./sandbox run pnpm test                   run one command inside it
+#   ./sandbox status                          what is running
+#   ./sandbox doctor                          check the host setup
+#   ./sandbox rebuild                         force an image rebuild
+#   ./sandbox stop                            stop the container
+#   ./sandbox test                            run the gate test suite
+#   ./sandbox bench                           time a canonical dispatch (writes foo.md) and print ms
+#   ./sandbox --file path                  long message, no pipe (the gate denies pipes)
+#   ./sandbox update                          upgrade the harness from upstream
+
+set -uo pipefail
+CLI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+S="$CLI_DIR/tools/sandbox"
+
+if [ ! -d "$S" ]; then
+  echo "tools/sandbox not found next to this script." >&2
+  exit 1
+fi
+
+# The header comment above is the help text. Read it up to the first line that
+# isn't a comment, rather than a line range that goes stale the moment a verb is
+# added — it used to print `set -uo pipefail` at the end for exactly that reason.
+usage() { awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "${BASH_SOURCE[0]}" >&2; }
+
+cmd="${1:-}"
+case "$cmd" in
+  ''|-h|--help|help) usage; exit 0 ;;
+  up)      shift; exec bash "$S/boot.sh" "$@" ;;
+  shell)   shift; exec bash "$S/run.sh" "$@" ;;
+  run)     shift; exec bash "$S/run.sh" "$@" ;;
+  tail)    shift; exec bash "$S/tail.sh" "$@" ;;
+  status)  shift; exec bash "$S/status.sh" "$@" ;;
+  doctor)  shift; exec bash "$S/doctor.sh" "$@" ;;
+  test)    shift; exec bash "$S/gate-test.sh" "$@" ;;
+  bench)   shift; exec bash "$S/bench.sh" "$@" ;;
+  result)  shift; exec bash "$S/dispatch.sh" --result "$@" ;;
+  rebuild) shift; SANDBOX_REBUILD=1 exec bash "$S/boot.sh" "$@" ;;
+  stop)    shift; exec bash "$S/status.sh" --stop "$@" ;;
+  # The one verb that writes to the project rather than driving the container.
+  # It replaces tools/sandbox with a newer copy from the repo this was installed
+  # from; sandbox.conf, AGENTS.md and CLAUDE.md are preserved.
+  update)  shift; exec bash "$S/update.sh" "$@" ;;
+esac
+
+# A single bare token that is not a known verb is a typo, not a task.
+# `./sandbox down` must not be sent to the inner agent as the prompt "down".
+# A quoted sentence ("add a health check") contains a space — let it through.
+if [ $# -eq 1 ]; then
+  case "$cmd" in
+    -*) ;;
+    *\ *) ;;
+    *)
+      printf 'unknown verb: %s\n' "$cmd" >&2
+      case "$cmd" in
+        down) echo "the verb is 'stop'." >&2 ;;
+        start|restart) echo "use './sandbox up' (or stop then up)." >&2 ;;
+        ps|logs) echo "use './sandbox status' or './sandbox tail'." >&2 ;;
+        exec) echo "use './sandbox run' or './sandbox shell'." >&2 ;;
+        kill|destroy|reset|clean) echo "use './sandbox stop'." >&2 ;;
+      esac
+      printf 'to send this as a message, quote a sentence: ./sandbox "%s ..."\n' "$cmd" >&2
+      exit 2
+      ;;
+  esac
+fi
+
+# Anything else is a message for the inner agent. `./sandbox "do the thing"`
+# should just work, without a verb in front of it.
+exec bash "$S/dispatch.sh" "$@"
