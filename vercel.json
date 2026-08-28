@@ -1,0 +1,29 @@
+{
+  "framework": "nextjs",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm --filter @gainmaps/web build",
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "gainmaps.com"
+        }
+      ],
+      "destination": "https://www.gainmaps.com/",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "gainmaps.com"
+        }
+      ],
+      "destination": "https://www.gainmaps.com/:path*",
+      "permanent": true
+    }
+  ]
+}

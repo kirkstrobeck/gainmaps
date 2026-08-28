@@ -1,0 +1,648 @@
+@import "tailwindcss" source("..");
+@source "../components";
+@source ".";
+
+:root {
+  /* Light-mode values — warm parchment ground, darker copper */
+  --background: #f2efe9;
+  --foreground: #17191c;
+  --muted: #5b6068;
+  --border: #d4cec2;
+  --panel: #e9e5dd;
+  --panel-strong: #dedad1;
+  /* Copper #8a4a1f on #f2efe9 = 5.99:1 (WCAG AA+) */
+  --accent: #8a4a1f;
+  --accent-foreground: #fbf8f3;
+  /* Instrument shell: always dark regardless of mode */
+  --inst-bg: #0b0e12;
+  --danger: #c0392b;
+  --success: #2e7d5a;
+  --radius: 10px;
+  --wash-top: color-mix(in srgb, var(--accent) 8%, transparent);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --hdr-white: #ffffff;
+  --hdr-accent: #c4723a;
+  --checker-a: #e8edf2;
+  --checker-b: #d8dee4;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0e1115;
+    --foreground: #f4f1ec;
+    --muted: #8f9aa4;
+    --border: #232a32;
+    --panel: #161b21;
+    --panel-strong: #1e262f;
+    --accent: #c4723a;
+    --accent-foreground: #14171b;
+    --inst-bg: #0b0e12;
+    --danger: #e57373;
+    --success: #6bcb9a;
+    --wash-top: color-mix(in srgb, var(--accent) 12%, transparent);
+    --hdr-white: #f4f1ec;
+    --hdr-accent: #c4723a;
+    --checker-a: #1e262f;
+    --checker-b: #161b21;
+  }
+}
+
+html[data-mode="light"] {
+  color-scheme: light;
+  --background: #f2efe9;
+  --foreground: #17191c;
+  --muted: #5b6068;
+  --border: #d4cec2;
+  --panel: #e9e5dd;
+  --panel-strong: #dedad1;
+  /* #8a4a1f on #f2efe9 = 5.99:1 */
+  --accent: #8a4a1f;
+  --accent-foreground: #fbf8f3;
+  --inst-bg: #0b0e12;
+  --danger: #c0392b;
+  --success: #2e7d5a;
+  --hdr-white: #ffffff;
+  --hdr-accent: #c4723a;
+  --checker-a: #e8edf2;
+  --checker-b: #d8dee4;
+}
+
+html[data-mode="dark"] {
+  color-scheme: dark;
+  --background: #0e1115;
+  --foreground: #f4f1ec;
+  --muted: #8f9aa4;
+  --border: #232a32;
+  --panel: #161b21;
+  --panel-strong: #1e262f;
+  --accent: #c4723a;
+  --accent-foreground: #14171b;
+  --inst-bg: #0b0e12;
+  --danger: #e57373;
+  --success: #6bcb9a;
+  --hdr-white: #f4f1ec;
+  --hdr-accent: #c4723a;
+  --checker-a: #1e262f;
+  --checker-b: #161b21;
+}
+
+html {
+  background: var(--background);
+  color: var(--foreground);
+  color-scheme: light dark;
+  dynamic-range-limit: no-limit;
+}
+
+html[data-ultra="off"] {
+  dynamic-range-limit: standard;
+}
+
+@supports (color: color-hdr(white 0, white 1)) {
+  :root {
+    --hdr-white: color-hdr(#ffffff 0, color(rec2100-linear 2.2 2.2 2.2) 2);
+    --hdr-accent: color-hdr(#c4723a 0, color(rec2100-linear 2.0 0.85 0.35) 2);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --hdr-white: color-hdr(#eef1f4 0, color(rec2100-linear 2.4 2.4 2.4) 2);
+      --hdr-accent: color-hdr(#c4723a 0, color(rec2100-linear 2.2 1.0 0.4) 2);
+    }
+  }
+
+  html[data-ultra="on"] {
+    --accent: var(--hdr-accent);
+    --panel: color-hdr(#ffffff 0, color(rec2100-linear 1.15 1.15 1.18) 1.5);
+    --panel-strong: color-hdr(
+      #e8edf2 0,
+      color(rec2100-linear 1.25 1.25 1.3) 1.5
+    );
+    --wash-top: color-mix(in oklab, var(--hdr-accent) 14%, transparent);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    html[data-ultra="on"] {
+      --panel: color-hdr(#1c2026 0, color(rec2100-linear 0.08 0.09 0.12) 1.5);
+      --panel-strong: color-hdr(
+        #252b33 0,
+        color(rec2100-linear 0.12 0.14 0.18) 1.5
+      );
+    }
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100dvh;
+  margin: 0;
+  background:
+    linear-gradient(180deg, var(--wash-top), transparent 32rem),
+    var(--background);
+  font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.6;
+  letter-spacing: 0;
+}
+
+.font-display {
+  font-family: var(--font-bricolage-grotesque), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-mono {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+
+.nav-action-control {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.nav-action-control svg {
+  flex-shrink: 0;
+}
+
+/* === Seam Instrument === */
+.inst {
+  position: relative;
+  overflow: hidden;
+  background: var(--inst-bg);
+  --seam-x: 50%;
+  touch-action: none;
+  user-select: none;
+  cursor: ew-resize;
+}
+
+.inst-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inst-sdr {
+  clip-path: inset(0 calc(100% - var(--seam-x)) 0 0);
+}
+
+.inst-handle {
+  position: absolute;
+  top: 50%;
+  left: var(--seam-x);
+  width: 26px;
+  height: 26px;
+  background: rgba(11, 14, 18, 0.72);
+  border-radius: 999px;
+  cursor: ew-resize;
+  transform: translate(-13px, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inst-handle:focus-visible {
+  outline: 2px solid rgba(196, 114, 58, 0.8);
+  outline-offset: 2px;
+}
+
+/* Expand handle touch target to 44x44 without growing the visual circle */
+.inst-handle::before {
+  content: "";
+  position: absolute;
+  inset: -9px;
+}
+
+/* Corner SDR/Ultra buttons — bottom-left and bottom-right */
+.inst-corner {
+  position: absolute;
+  bottom: 8px;
+  padding: 0 6px;
+  z-index: 10;
+}
+
+.inst-corner-sdr {
+  left: 0;
+}
+
+.inst-corner-ultra {
+  right: 0;
+}
+
+.inst-switch-btn {
+  position: relative;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(244, 241, 236, 1);
+  background: rgba(11, 14, 18, 0.72);
+  border: 1px solid rgba(244, 241, 236, 0.4);
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 44×44 hit target via ::before */
+.inst-switch-btn::before {
+  content: "";
+  position: absolute;
+  inset: -9px;
+}
+
+.inst-switch-btn:hover {
+  background: rgba(11, 14, 18, 0.88);
+  border-color: rgba(244, 241, 236, 0.7);
+}
+
+.inst-switch-btn:active {
+  background: rgba(11, 14, 18, 0.95);
+  transform: scale(0.97);
+}
+
+.inst-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #c4723a;
+  box-shadow: 0 0 8px #c4723a;
+  flex-shrink: 0;
+}
+
+/* Img fills for photo instrument */
+.inst-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  -webkit-user-drag: none;
+}
+
+/* Off-screen gallery cards skip layout/paint until they approach the viewport. */
+.photo-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 280px;
+}
+
+/* Type inside the instrument — SDR text must be ordinary opaque text over an opaque SDR layer. */
+.inst-type-sdr-layer {
+  background: var(--inst-bg);
+}
+
+.inst-type-std {
+  color: rgb(244 241 236);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inst-sdr,
+  .inst-handle {
+    transition: none !important;
+  }
+}
+
+html[data-ultra="on"] .ultra-surface {
+  background-color: var(--panel);
+}
+
+@supports (color: color-hdr(white 0, white 1)) {
+  html[data-ultra="on"] .site-mark {
+    background: var(--hdr-accent);
+    color: var(--accent-foreground);
+  }
+}
+
+.ultra-svg,
+.ultra-svg-root {
+  --svg-ink: #1a1d21;
+  --svg-panel: #e8edf2;
+  --svg-accent: #c4723a;
+  --svg-bright: #e8a060;
+  --svg-soft: #a8b4c0;
+  --svg-white: #ffffff;
+  dynamic-range-limit: inherit;
+}
+
+html[data-ultra="on"] .ultra-svg,
+html[data-ultra="on"] .ultra-svg-root {
+  dynamic-range-limit: no-limit;
+}
+
+@supports (color: color-hdr(white 0, white 1)) {
+  html[data-ultra="on"] .ultra-svg,
+  html[data-ultra="on"] .ultra-svg-root {
+    --svg-bright: color-hdr(#e8a060 0, color(rec2100-linear 2.2 1.2 0.35) 2);
+    --svg-white: color-hdr(#ffffff 0, color(rec2100-linear 2.3 2.3 2.3) 2);
+    --svg-accent: color-hdr(#c4723a 0, color(rec2100-linear 2.1 0.85 0.35) 2);
+    --svg-soft: color-hdr(#a8b4c0 0, color(rec2100-linear 1.3 1.35 1.4) 1.8);
+    --svg-panel: color-hdr(#e8edf2 0, color(rec2100-linear 1.2 1.22 1.25) 1.4);
+  }
+}
+
+.preview-original,
+.preview-original.ultra-svg,
+.preview-original .ultra-svg-root {
+  dynamic-range-limit: standard;
+}
+
+.checkerboard {
+  background-image: repeating-conic-gradient(
+    var(--checker-a) 0% 25%,
+    var(--checker-b) 0% 50%
+  );
+  background-size: 16px 16px;
+}
+
+.preview-revised,
+.gainmap-image,
+.preview-svg:not(.preview-original) {
+  dynamic-range-limit: no-limit;
+}
+
+html[data-ultra="off"] .preview-revised,
+html[data-ultra="off"] .gainmap-image,
+html[data-ultra="off"] .preview-svg:not(.preview-original) {
+  dynamic-range-limit: standard;
+}
+
+/* Seam instrument gainmap images always show full headroom (the seam IS the comparison) */
+html[data-ultra="off"] .inst .gainmap-image {
+  dynamic-range-limit: no-limit;
+}
+
+/* Hero backdrop gainmap layer — opacity switches instantly when Ultra is toggled */
+.hero-ultra-layer {
+}
+
+html[data-ultra="off"] .hero-ultra-layer {
+  opacity: 0;
+}
+
+/* Hero directional scrim — var(--background) as solid/fade from left + bottom.
+   Dark mode: 36% solid charcoal, 84% at mid. Light mode: same stops, 90% at mid
+   for adequate text contrast against photo on narrow viewports. */
+.hero-scrim {
+  background:
+    linear-gradient(
+      to right,
+      var(--background) 36%,
+      color-mix(in srgb, var(--background) 84%, transparent) 58%,
+      color-mix(in srgb, var(--background) 22%, transparent) 100%
+    ),
+    linear-gradient(to top, var(--background) 0%, transparent 14rem);
+}
+
+/* Strengthen for light mode — more coverage on narrow viewports */
+html[data-mode="light"] .hero-scrim {
+  background:
+    linear-gradient(
+      to right,
+      var(--background) 42%,
+      color-mix(in srgb, var(--background) 90%, transparent) 62%,
+      color-mix(in srgb, var(--background) 28%, transparent) 100%
+    ),
+    linear-gradient(to top, var(--background) 0%, transparent 14rem);
+}
+
+@media (prefers-color-scheme: light) {
+  html:not([data-mode="dark"]) .hero-scrim {
+    background:
+      linear-gradient(
+        to right,
+        var(--background) 42%,
+        color-mix(in srgb, var(--background) 90%, transparent) 62%,
+        color-mix(in srgb, var(--background) 28%, transparent) 100%
+      ),
+      linear-gradient(to top, var(--background) 0%, transparent 14rem);
+  }
+}
+
+button,
+input {
+  font: inherit;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+html[data-ultra="on"] ::selection {
+  background: color-mix(in oklab, var(--hdr-accent) 28%, transparent);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.appearance-lab {
+  --ultra-scale: 1;
+  position: relative;
+  color: var(--foreground);
+  background: var(--appearance-bg);
+}
+
+.appearance-lab[data-hello-surface="gpu"] {
+  background: transparent;
+}
+
+.appearance-bar-slot {
+  position: sticky;
+  top: 4rem; /* clear the sticky SiteNav (64px) */
+  z-index: 2;
+}
+
+.appearance-bar {
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.appearance-bar-inner {
+  box-sizing: border-box;
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 28rem;
+  margin-inline: auto;
+  padding: 0.75rem;
+}
+
+.appearance-main {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  min-height: calc(100dvh - 12rem);
+  padding: 2.25rem 1rem 4rem;
+}
+
+.appearance-hello {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  pointer-events: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.appearance-lab[data-resolved="light"] {
+  color-scheme: light;
+  --background: #f2efe9;
+  --foreground: #17191c;
+  --muted: #5b6068;
+  --border: #d4cec2;
+  --panel: #e9e5dd;
+  --panel-strong: #dedad1;
+  --accent: #8a4a1f;
+  --accent-foreground: #fbf8f3;
+  --appearance-bg: #f2efe9;
+  --appearance-elevated: #e9e5dd;
+  --appearance-fill: rgb(91 96 104 / 0.14);
+}
+
+.appearance-lab[data-resolved="dark"] {
+  color-scheme: dark;
+  --background: #14171b;
+  --foreground: #eef1f4;
+  --muted: #8b939e;
+  --border: #2a3038;
+  --panel: #1c2026;
+  --panel-strong: #252b33;
+  --accent: #c4723a;
+  --accent-foreground: #1a1d21;
+  --appearance-bg: #14171b;
+  --appearance-elevated: #1c2026;
+  --appearance-fill: rgb(139 147 158 / 0.22);
+}
+
+html[data-appearance-edr="on"],
+.appearance-lab[data-ultra="on"] {
+  dynamic-range-limit: no-limit;
+}
+
+/* Ultra mode by Kirk Strobeck – https://UltraDarkMode.com */
+
+.ultra-fill {
+  dynamic-range-limit: inherit;
+}
+
+html[data-ultra="on"] .ultra-fill {
+  dynamic-range-limit: no-limit;
+}
+
+/* Ultra mode by Kirk Strobeck */
+html[data-ultra="on"] .ultra-icon,
+html[data-ultra="on"] .ultra-icon .ultra-fill,
+html[data-ultra="on"] .ultra-icon .ultra-backdrop {
+  dynamic-range-limit: no-limit;
+}
+
+html[data-ultra="off"] .ultra-icon,
+html[data-ultra="off"] .ultra-icon .ultra-fill,
+html[data-ultra="off"] .ultra-icon .ultra-backdrop,
+html[data-ultra="off"] .ultra-fill,
+html[data-ultra="off"] .ultra-backdrop,
+html[data-ultra="off"] .ultra-word {
+  dynamic-range-limit: standard;
+}
+
+/* Absolutely-positioned children (ultra overlay) extend 50% past edges; clip
+   prevents a horizontal scrollbar without hiding anything visible. */
+.ultra-word {
+  overflow: clip;
+  overflow-clip-margin: content-box;
+}
+
+.ultra-mask-defs {
+  opacity: 0;
+  z-index: 0;
+}
+
+.ultra-backdrop {
+  background: #ffffff;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ultra-word > .ultra-fill-foundation {
+  z-index: 1;
+}
+
+.ultra-word > .ultra-fill-inner {
+  z-index: 3;
+}
+
+/*
+  In light mode, UltraWord letterforms are white-on-white — invisible.
+  Suppress the fill canvas and shift the backdrop to foreground so the glyphs
+  read as dark text. UltraIcon keeps its white fill (it sits on coloured surfaces).
+*/
+html[data-mode="light"] .ultra-word > .ultra-backdrop {
+  background: var(--foreground);
+}
+html[data-mode="light"] .ultra-word > .ultra-fill {
+  opacity: 0;
+}
+
+@media (prefers-color-scheme: light) {
+  html:not([data-mode="dark"]) .ultra-word > .ultra-backdrop {
+    background: var(--foreground);
+  }
+  html:not([data-mode="dark"]) .ultra-word > .ultra-fill {
+    opacity: 0;
+  }
+}
+
+/*
+  The seam instrument (.inst) always has a dark background regardless of page
+  mode. UltraWord inside it must keep its white letterforms even in light mode,
+  so override the light-mode foreground-backdrop rule here.
+*/
+html[data-mode="light"] .inst .ultra-word > .ultra-backdrop {
+  background: #ffffff;
+}
+html[data-mode="light"] .inst .ultra-word > .ultra-fill {
+  opacity: 1;
+}
+
+@media (prefers-color-scheme: light) {
+  html:not([data-mode="dark"]) .inst .ultra-word > .ultra-backdrop {
+    background: #ffffff;
+  }
+  html:not([data-mode="dark"]) .inst .ultra-word > .ultra-fill {
+    opacity: 1;
+  }
+}
+
+.ultra-fill[data-ultra-fill="unsupported"] {
+  display: none;
+}

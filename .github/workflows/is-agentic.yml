@@ -1,0 +1,37 @@
+name: is-agentic
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  score:
+    name: is-agentic score check
+    runs-on: ubuntu-latest
+    env:
+      # Minimum score floor. Must only ever be raised, never lowered.
+      # Target is 100. Baseline measured 2026-08-26.
+      MIN_SCORE: 58
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.15.0"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run is-agentic check
+        run: pnpm is-agentic

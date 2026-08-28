@@ -1,0 +1,106 @@
+# syntax=docker/dockerfile:1
+
+# --- shared base ---
+FROM node:24-bookworm-slim AS base
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl tar ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+WORKDIR /repo
+
+COPY packages/gainmap/package.json packages/gainmap/
+COPY packages/gainmap/src packages/gainmap/src
+COPY packages/gainmap/tsconfig.json packages/gainmap/tsconfig.json
+COPY packages/gainmap/tsconfig.lib.json packages/gainmap/tsconfig.lib.json
+COPY packages/gainmap/install.sh packages/gainmap/install.sh
+COPY packages/gainmap/test/fixtures packages/gainmap/test/fixtures
+
+WORKDIR /repo/packages/gainmap
+RUN npm install && npm run build && npm pack
+
+WORKDIR /repo
+COPY packages/gainmap/e2e packages/gainmap/e2e
+COPY Formula/gainmap.rb Formula/gainmap.rb
+
+# --- node-tarball (build a minimal Node tarball from the base image) ---
+FROM node:24-bookworm-slim AS node-tarball
+RUN node_ver="$(node --version | sed 's/^v//')" && \
+    case "$(uname -m)" in \
+      x86_64|amd64)  arch=x64 ;; \
+      arm64|aarch64) arch=arm64 ;; \
+    esac && \
+    dir="node-v${node_ver}-linux-${arch}" && \
+    mkdir -p "/tmp/${dir}/bin" "/tmp/${dir}/lib" && \
+    cp -L /usr/local/bin/node "/tmp/${dir}/bin/node" && \
+    cp -r /usr/local/lib/node_modules "/tmp/${dir}/lib/" && \
+    tar czf /tmp/node-tarball.tar.gz -C /tmp "${dir}"
+
+# --- test-npm ---
+FROM base AS test-npm
+WORKDIR /repo/packages/gainmap
+RUN TGZ="$(ls gainmap-*.tgz | head -1)" && npm install -g "$TGZ"
+RUN gainmap --version
+ENV GAINMAP_BIN=gainmap
+RUN sh e2e/run.sh
+RUN touch /ok-npm
+
+# --- test-curl ---
+FROM base AS test-curl
+WORKDIR /repo/packages/gainmap
+# Verify unwritable install dir fails with correct message (must run as non-root)
+RUN mkdir -p /test-unwritable && chmod 555 /test-unwritable && \
+    OUT="$(su node -s /bin/sh -c \
+      'PATH=/usr/local/bin:/usr/bin:/bin GAINMAP_INSTALL_DIR=/test-unwritable sh /repo/packages/gainmap/install.sh 2>&1' \
+      || true)" && \
+    echo "$OUT" | grep -q "not writable" && \
+    echo "unwritable check passed"
+# Install with local tarball
+RUN mkdir -p /usr/local/bin && \
+    TGZ="$(ls gainmap-*.tgz | head -1)" && \
+    GAINMAP_INSTALL_DIR=/usr/local/bin GAINMAP_TARBALL="$TGZ" sh install.sh
+RUN gainmap --version
+ENV GAINMAP_BIN=gainmap
+RUN sh e2e/run.sh
+RUN touch /ok-curl
+
+# --- test-curl-no-node (debian slim with no system node, bundled via tarball) ---
+FROM debian:bookworm-slim AS test-curl-no-node
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl tar ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+COPY --from=base /repo/packages/gainmap /repo/packages/gainmap
+COPY --from=node-tarball /tmp/node-tarball.tar.gz /node-tarball.tar.gz
+RUN command -v node 2>/dev/null && echo "FAIL: node should not be on PATH before install" && exit 1 || true
+WORKDIR /repo/packages/gainmap
+RUN TGZ="$(ls gainmap-*.tgz | head -1)" && \
+    GAINMAP_INSTALL_DIR=/usr/local/bin \
+    GAINMAP_TARBALL="$TGZ" \
+    GAINMAP_NODE_TARBALL=/node-tarball.tar.gz \
+    sh install.sh
+ENV PATH=/usr/local/bin:/usr/bin:/bin
+RUN command -v node 2>/dev/null && echo "FAIL: node should not be on PATH" && exit 1 || true
+RUN gainmap --version
+RUN touch /ok-curl-no-node
+
+# --- test-brew ---
+FROM base AS test-brew
+RUN apt-get update && apt-get install -y --no-install-recommends ruby && rm -rf /var/lib/apt/lists/*
+WORKDIR /repo/packages/gainmap
+# Verify Ruby formula syntax
+RUN ruby -c /repo/Formula/gainmap.rb
+# Simulate HEAD-style install
+RUN npm prune --omit=dev
+RUN mkdir -p /usr/local/bin /usr/local/libexec/gainmap && \
+    cp -r dist node_modules package.json /usr/local/libexec/gainmap/
+RUN printf '#!/bin/sh\nexec node /usr/local/libexec/gainmap/dist/cli.js "$@"\n' \
+    > /usr/local/bin/gainmap && chmod 0755 /usr/local/bin/gainmap
+RUN gainmap --version
+ENV GAINMAP_BIN=gainmap
+RUN sh e2e/run.sh
+RUN touch /ok-brew
+
+# --- test-all (default target) ---
+FROM scratch AS test-all
+COPY --from=test-npm /ok-npm /ok-npm
+COPY --from=test-curl /ok-curl /ok-curl
+COPY --from=test-curl-no-node /ok-curl-no-node /ok-curl-no-node
+COPY --from=test-brew /ok-brew /ok-brew

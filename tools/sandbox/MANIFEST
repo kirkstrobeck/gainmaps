@@ -1,0 +1,104 @@
+# Every path an install of this harness owns. install.sh reads it to decide what
+# to write; update.sh reads the copy already in the project to decide what to
+# delete. If a path is not in here, install does not touch it.
+#
+# Bump `version` whenever the set of paths changes. It is not used for
+# comparison — the path lists are — but it gives a human something to point at.
+
+version 7
+
+# Modes
+#
+#   replace   Copied from the source tree on every install. Deleting the line
+#             deletes the file from the project on the next `./sandbox update`.
+#             This is the harness: not project code, safe to overwrite.
+#
+#   preserve  Copied from the source tree only when the project does not have
+#             it. Never overwritten, never deleted — once it exists it is the
+#             project's. (sandbox.conf is the exception that still gets the
+#             incoming defaults dropped beside it as sandbox.conf.new.)
+#
+#   manage    Install touches it but does not own its contents: merged into,
+#             generated, or purely the project's own state. Never wholesale
+#             copied, never deleted. Listed so this file is the complete
+#             footprint rather than most of it.
+
+# --- the CLI and the harness ------------------------------------------------
+replace  sandbox
+replace  tools/sandbox/MANIFEST
+replace  tools/sandbox/manifest.sh
+replace  tools/sandbox/AGENT.md
+replace  tools/sandbox/Dockerfile
+replace  tools/sandbox/agent.sh
+replace  tools/sandbox/bench-test.sh
+replace  tools/sandbox/bench.sh
+replace  tools/sandbox/boot.sh
+replace  tools/sandbox/codex-token-sync.sh
+replace  tools/sandbox/copilot-token-sync.sh
+replace  tools/sandbox/agy-token-sync.sh
+replace  tools/sandbox/amp-token-sync.sh
+replace  tools/sandbox/opencode-token-sync.sh
+replace  tools/sandbox/colima.sh
+replace  tools/sandbox/common.sh
+replace  tools/sandbox/config.sh
+replace  tools/sandbox/cursor-token-sync.sh
+replace  tools/sandbox/dev-fs.sh
+replace  tools/sandbox/dispatch-claude.sh
+replace  tools/sandbox/dispatch-codex.sh
+replace  tools/sandbox/dispatch-cursor.sh
+replace  tools/sandbox/dispatch-copilot.sh
+replace  tools/sandbox/dispatch-agy.sh
+replace  tools/sandbox/dispatch-amp.sh
+replace  tools/sandbox/dispatch-opencode.sh
+replace  tools/sandbox/dispatch.sh
+replace  tools/sandbox/doctor.sh
+replace  tools/sandbox/entrypoint.sh
+replace  tools/sandbox/gate-lib.sh
+replace  tools/sandbox/gate-test.sh
+replace  tools/sandbox/github-token-sync.sh
+replace  tools/sandbox/hooks.json
+replace  tools/sandbox/mac-save-bridge.mjs
+replace  tools/sandbox/model.sh
+replace  tools/sandbox/model-daily.sh
+replace  tools/sandbox/model-daily-test.sh
+replace  tools/sandbox/outer-gate.sh
+replace  tools/sandbox/outer-write-gate.sh
+replace  tools/sandbox/outer-gate-deny.d/README.md
+replace  tools/sandbox/outer-write-gate-deny.d/README.md
+replace  tools/sandbox/run-args.sh
+replace  tools/sandbox/run.sh
+replace  tools/sandbox/skeleton.awk
+replace  tools/sandbox/status.sh
+replace  tools/sandbox/tail.sh
+replace  tools/sandbox/token-sync.sh
+replace  tools/sandbox/update.sh
+replace  tools/sandbox/update-test.sh
+replace  tools/sandbox/credential-expiry.sh
+replace  tools/sandbox/credential-expiry-test.sh
+
+# Reference documentation for the harness, not project prose, so it tracks the
+# harness version rather than being preserved.
+replace  .claude/skills/sandbox/SKILL.md
+
+# --- yours once they exist --------------------------------------------------
+preserve tools/sandbox/sandbox.conf
+preserve AGENTS.md
+preserve CLAUDE.md
+preserve .cursor/rules/sandbox.mdc
+
+# --- Cursor outer hooks (harness-owned, replaced on every install) -----------
+replace  .cursor/hooks/sandbox-shell.sh
+replace  .cursor/hooks/sandbox-write.sh
+replace  .cursor/hooks/sandbox-read.sh
+
+# --- touched, not owned -----------------------------------------------------
+manage   tools/sandbox/ORIGIN.md            # generated: repo, ref, commit
+manage   tools/sandbox/sandbox.conf.new     # generated: incoming defaults
+manage   tools/sandbox/sandbox.local.conf   # yours, machine-local, gitignored
+manage   tools/sandbox/.cache               # live credentials and run state
+manage   tools/sandbox/.install-hashes      # generated: replace-file hashes for drift detection
+manage   tools/sandbox/outer-gate-deny.d       # project deny hooks; contents survive updates
+manage   tools/sandbox/outer-write-gate-deny.d # project write-gate deny hooks; contents survive updates
+manage   .claude/settings.json              # PreToolUse gates merged in
+manage   .cursor/hooks.json                 # sandbox hooks merged in
+manage   .gitignore                         # credential paths appended

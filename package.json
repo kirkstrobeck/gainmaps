@@ -1,0 +1,52 @@
+{
+  "name": "gainmaps.com",
+  "version": "1.0.0",
+  "description": "Gainmaps web app and CLI workspace for Ultra HDR gain map images",
+  "private": true,
+  "packageManager": "pnpm@10.15.0",
+  "scripts": {
+    "test": "pnpm --filter gainmap test && pnpm --filter @gainmaps/web test",
+    "test:all": "pnpm test",
+    "typecheck": "pnpm --filter gainmap typecheck && pnpm --filter @gainmaps/web typecheck",
+    "build": "pnpm --filter @gainmaps/web build",
+    "dev": "turbo dev --filter=@gainmaps/web",
+    "web:dev": "turbo dev --filter=@gainmaps/web",
+    "web:build": "turbo build:isolated --filter=@gainmaps/web",
+    "lint": "turbo lint",
+    "check": "turbo typecheck test",
+    "photos:build": "npx tsx tools/photos/build-photos.ts",
+    "logos:build": "npx tsx tools/logos/build-logos.ts",
+    "lh": "tsx tools/lighthouse/run.ts both",
+    "lh:desktop": "tsx tools/lighthouse/run.ts desktop",
+    "lh:mobile": "tsx tools/lighthouse/run.ts mobile",
+    "fps": "FPS_BASE_URL=${FPS_BASE_URL:-http://127.0.0.1:3000} tsx tools/fps/measure.ts",
+    "fps:assert": "tsx tools/fps/assert.ts",
+    "is-agentic": "tsx tools/is-agentic/check.ts"
+  },
+  "keywords": [
+    "hdr",
+    "ultra-hdr",
+    "gain-map",
+    "jpeg",
+    "nextjs",
+    "cli"
+  ],
+  "author": "Kirk Strobeck <kirk@strobeck.com>",
+  "license": "MIT",
+  "repository": "https://github.com/kirkstrobeck/gainmaps",
+  "type": "module",
+  "devDependencies": {
+    "@lhci/cli": "^0.15.1",
+    "@types/node": "^26.1.2",
+    "@vitest/coverage-v8": "^4.1.10",
+    "next": "^15.4.5",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "sharp": "^0.35.3",
+    "tsx": "^4.23.8",
+    "turbo": "^2.5.6",
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.10"
+  },
+  "homepage": "https://www.gainmaps.com"
+}

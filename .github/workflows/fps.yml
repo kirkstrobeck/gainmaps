@@ -1,0 +1,44 @@
+name: FPS
+
+on:
+  workflow_dispatch:
+  # pull_request against main is added once every scenario holds 60fps in
+  # CPU-only rasterization. Do not measure the Next.js dev server because its
+  # FPS is not comparable to production.
+
+jobs:
+  fps:
+    name: 60fps gate
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.15.0"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build isolated production server
+        run: pnpm -C apps/web build:isolated
+
+      - name: Start isolated production server
+        run: |
+          pnpm -C apps/web start:isolated &
+          npx wait-on http://127.0.0.1:3000 --timeout 120000
+
+      - name: Measure FPS and assert ≥ 60
+        run: pnpm fps
+        env:
+          FPS_BASE_URL: http://127.0.0.1:3000
