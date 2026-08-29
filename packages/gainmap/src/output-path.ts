@@ -11,6 +11,7 @@ const ALLOWED_OUT_TYPES = new Set([
   "tif",
   "tiff",
   "gif",
+  "mp4",
 ]);
 
 export type OutputPlan = {
@@ -28,7 +29,7 @@ export function stripExtension(name: string): string {
 function preservedOrJpegExt(input: string): string {
   const ext = extname(input);
   const lower = ext.toLowerCase();
-  if (lower === ".jpg" || lower === ".jpeg") return ext;
+  if (lower === ".jpg" || lower === ".jpeg" || lower === ".mp4") return ext;
   return ".jpg";
 }
 
@@ -39,7 +40,7 @@ export function normalizeOutType(raw: string): string {
   if (stripped === "svg") throw new Error("unsupported --out-type svg: SVG is input only")
   if (!ALLOWED_OUT_TYPES.has(stripped)) {
     throw new Error(
-      "unsupported --out-type: must be one of: jpg, jpeg, png, webp, avif, tif, tiff, gif",
+      "unsupported --out-type: must be one of: jpg, jpeg, png, webp, avif, tif, tiff, gif, mp4",
     );
   }
   return stripped;
@@ -95,7 +96,7 @@ export function assertFileOutputPath(path: string, outType?: string): void {
   const fromPath = typeFromOutputPath(path);
   if (fromPath == null) {
     throw new Error(
-      "unsupported output extension: must be jpg, jpeg, png, webp, avif, tif, tiff, or gif",
+      "unsupported output extension: must be jpg, jpeg, png, webp, avif, tif, tiff, gif, or mp4",
     );
   }
   if (outType != null && !typesAgree(fromPath, outType)) {

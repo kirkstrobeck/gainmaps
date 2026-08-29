@@ -12,6 +12,7 @@ import { DEFAULT_EXTENSIONS } from "#src/decode.js";
 describe("walk", () => {
   it("parses extension lists and exclude globs", () => {
     assert.deepEqual(parseExtensionList(undefined), DEFAULT_EXTENSIONS);
+    assert.ok(DEFAULT_EXTENSIONS.includes("mp4"));
     assert.deepEqual(parseExtensionList("  "), DEFAULT_EXTENSIONS);
     assert.deepEqual(parseExtensionList(".PNG, jpg"), ["png", "jpg"]);
     assert.equal(hasAllowedExtension("a.PNG", ["png"]), true);
@@ -29,9 +30,12 @@ describe("walk", () => {
     await writeFile(join(dir, "a.png"), png);
     await writeFile(join(nested, "b.png"), png);
     await writeFile(join(dir, "skip.txt"), "nope");
+    await writeFile(join(dir, "clip.mp4"), "video");
     await symlink(join(dir, "a.png"), join(dir, "link.png"));
     const flat = await collectInputs([dir], { recursive: false, extensions: ["png"], exclude: [] });
     assert.equal(flat.length, 1);
+    const defaultMedia = await collectInputs([dir], { recursive: false, extensions: DEFAULT_EXTENSIONS, exclude: [] });
+    assert.equal(defaultMedia.length, 2);
     const deep = await collectInputs([dir], { recursive: true, extensions: ["png"], exclude: [] });
     assert.equal(deep.length, 2);
     const excluded = await collectInputs([dir], { recursive: true, extensions: ["png"], exclude: ["**/nested/**"] });

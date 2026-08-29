@@ -48,6 +48,8 @@ describe("cli", () => {
     assert.ok(USAGE.includes("--recursive"));
     assert.ok(USAGE.includes("--in-place"));
     assert.ok(USAGE.includes("photo-gain.jpg"));
+    assert.ok(USAGE.includes("clip.mp4"));
+    assert.ok(USAGE.includes("HDR MP4 transcode"));
     assert.equal(await run(["-V"]), 0);
     assert.match(logs.stdout, new RegExp("gainmap " + readPackageVersion()));
     assert.ok(logs.stdout.includes("github.com/kirkstrobeck/gainmaps") || USAGE.includes("github.com/kirkstrobeck/gainmaps"));
@@ -80,6 +82,12 @@ describe("cli", () => {
     await mkdir(empty);
     assert.equal(await run([empty]), 2);
     assert.equal(await run([join(dir, "missing.png")]), 2);
+    const mp4 = join(dir, "clip.mp4");
+    await writeFile(mp4, Buffer.from("video"));
+    assert.equal(await run([mp4, "-n"]), 0);
+    assert.ok(logs.stderr.includes("clip-gain.mp4"));
+    assert.equal(await run([mp4, "--stdout"]), 2);
+    assert.equal(await run([pngInput, "-o", join(dir, "bad.mp4")]), 2);
   });
 
   it("handles recursive dir output, exclude, force, and quiet", async () => {

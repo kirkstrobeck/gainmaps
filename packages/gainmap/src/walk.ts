@@ -35,7 +35,7 @@ async function collectOne(path: string, options: WalkOptions, cwd: string): Prom
   if (stat.isSymbolicLink()) return [];
   if (stat.isFile()) {
     if (!hasAllowedExtension(path, options.extensions)) {
-      throw Object.assign(new Error("Unsupported image type: " + path), { code: "UNSUPPORTED" });
+      throw Object.assign(new Error("Unsupported media type: " + path), { code: "UNSUPPORTED" });
     }
     return [path];
   }

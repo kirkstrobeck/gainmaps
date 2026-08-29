@@ -1,12 +1,13 @@
 # gainmap
 
-CLI to convert images into Ultra HDR JPEG gain maps (ISO/TS 21496-1). Same keep-base encoder as [gainmaps.com](https://gainmaps.com).
+CLI to convert images into Ultra HDR JPEG gain maps (ISO/TS 21496-1), plus initial MP4-to-MP4 Ultra/HDR video transcoding. Same keep-base image encoder as [gainmaps.com](https://gainmaps.com).
 
 ```sh
 gainmap photo.jpg
 gainmap ./shots
 gainmap -R ./shots -o ./out
 gainmap photo.png --out ./out --out-type webp
+gainmap clip.mp4 --out clip-ultra.mp4
 gainmap -i photo.jpg
 ```
 
@@ -18,6 +19,7 @@ Quick paths:
 - From this clone: `brew install --HEAD --formula ./Formula/gainmap.rb`
 - Without brew: `cd packages/gainmap && npm install && npm run build && npm link`
 - Docker: `docker build -t gainmap packages/gainmap && docker run --rm -v "$PWD:/work" gainmap photo.jpg`
+- MP4: requires `ffmpeg` with `libx265` in PATH and writes an HDR MP4 transcode, not a JPEG gain-map container
 - e2e install tests: `docker build -f packages/gainmap/Dockerfile.e2e .` (from repo root; tests npm, curl, and brew-equivalent paths)
 
 ## Contributing

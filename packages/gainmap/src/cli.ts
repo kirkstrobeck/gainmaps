@@ -21,7 +21,7 @@ import { checkUpdate, printUpdateNotice, selfUpdate, shouldSkipUpdateCheck } fro
 import { readPackageVersion } from "#src/version.js";
 
 export function usage(): string {
-  return `gainmap ${readPackageVersion()} — convert images to Ultra HDR JPEG (ISO 21496-1 gain maps)
+  return `gainmap ${readPackageVersion()} — convert images to Ultra HDR JPEG and MP4 videos
 
 Usage
   gainmap [options] <input...>
@@ -29,18 +29,19 @@ Usage
   gainmap extract-sdr [options] <input>
   gainmap update
 
-Input is a file, a directory, or - for stdin. Directories convert matching
-images in that folder. Use -R/--recursive for nested trees.
+Input is a file, a directory, or - for image stdin. Directories convert matching
+images and MP4 videos in that folder. Use -R/--recursive for nested trees.
 extract-sdr writes the primary SDR JPEG (first SOI..EOI) from a gain map.
+MP4 output uses ffmpeg/libx265 and writes an HDR MP4 transcode, not a JPEG gain-map container.
 
 Output
   -o, --out, --output <path>
                         File (single input), directory (required for recursive
                         or multi-file; mirrors source dirs), or - for stdout
       --out-type <type> Output format when --out is a directory (jpg jpeg png
-                        webp avif tif tiff gif). File --out uses the extension;
+                        webp avif tif tiff gif mp4). File --out uses the extension;
                         --out-type must agree if both are set. jpg/jpeg write
-                        Ultra HDR gain maps; other types encode via sharp. Unknown flags error. HEIC/HEIF/SVG are input only.
+                        Ultra HDR gain maps; mp4 writes an HDR video transcode; other types encode via sharp. Unknown flags error. HEIC/HEIF/SVG are input only.
       --suffix <str>    Default -gain (photo.jpg -> photo-gain.jpg)
   -i, --in-place        Overwrite the original JPEG (implies force)
   -f, --force           Overwrite existing outputs (e.g. photo-gain.jpg)
@@ -82,7 +83,9 @@ Examples
   gainmap photo.jpg
   gainmap photo.jpg -o hdr.jpg
   gainmap photo.png
+  gainmap clip.mp4
   gainmap photo.png --out dest.webp
+  gainmap clip.mp4 --out clip-ultra.mp4
   gainmap photo.png --out ./out --out-type webp
   gainmap -R ./shots --out ./out --out-type png
   gainmap -i photo.jpg

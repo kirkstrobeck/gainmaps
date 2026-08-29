@@ -1,6 +1,6 @@
 # gainmap CLI
 
-Convert photos, logos, and other images into Ultra HDR JPEG files with an embedded gain map (ISO/TS 21496-1 / Android Ultra HDR / Apple Adaptive HDR). This is the same keep-base encoder as [gainmaps.com](https://gainmaps.com) convert.
+Convert photos, logos, and other images into Ultra HDR JPEG files with an embedded gain map (ISO/TS 21496-1 / Android Ultra HDR / Apple Adaptive HDR). The CLI also has initial MP4 input support that writes an Ultra/HDR MP4 transcode. This is the same keep-base image encoder as [gainmaps.com](https://gainmaps.com) convert.
 
 A gain-map JPEG is still a normal JPEG: every app can open the SDR base. HDR displays expand highlights using the second layer.
 
@@ -88,6 +88,7 @@ Each stage runs `e2e/run.sh` which covers --help, --version, all 16 scenarios, a
 - Node.js 24+ for npm and source installs (`hdrify` declares `>=24`). Homebrew installs Node for you. The curl installer bundles Node 24 into `$HOME/.gainmap/runtime`. The Docker image includes Node.
 - Sharp's platform binary, downloaded at `npm install` (needs network at **install** time, not when converting)
 - `heic-decode` is bundled (HEIC does **not** need system libheif)
+- MP4 conversion requires `ffmpeg` with `libx265` available in PATH
 
 **Not required**
 
@@ -99,6 +100,7 @@ Each stage runs `e2e/run.sh` which covers --help, --version, all 16 scenarios, a
 - Alpine/musl is unsupported by the Dockerfile. Use `node:24-bookworm-slim` (or another glibc image).
 - Animated GIF: first frame only.
 - Very large images are memory-bound (the whole raster is decoded).
+- MP4 output is an HDR video transcode with BT.2020/PQ signaling, copied audio, and x265/HVC1 video. It is not an ISO still-image gain-map JPEG container.
 - SVG rasterization is Sharp/librsvg's subset of SVG. HEIC is input only. Unknown flags exit 2 as unsupported option.
 
 ## Usage
@@ -108,22 +110,22 @@ gainmap [options] <input...>
 gainmap convert [options] <input...>
 ```
 
-Input is a file, a directory, or `-` for stdin. Directories convert matching images in that folder. Use `-R`/`--recursive` for nested trees. Without `-R`, a directory is **flat-only**.
+Input is a file, a directory, or `-` for image stdin. Directories convert matching images and MP4 videos in that folder. Use `-R`/`--recursive` for nested trees. Without `-R`, a directory is **flat-only**.
 
-Default output: `photo.jpg` → `photo-gain.jpg` next to the input. Non-JPEG inputs (PNG, HEIC, WebP, …) become `*-gain.jpg`. Existing files are skipped unless `-f`/`--force`. Originals are left alone unless `--in-place`.
+Default output: `photo.jpg` → `photo-gain.jpg` next to the input. Non-JPEG image inputs (PNG, HEIC, WebP, …) become `*-gain.jpg`. MP4 inputs become `*-gain.mp4`. Existing files are skipped unless `-f`/`--force`. Originals are left alone unless `--in-place`.
 
 ### Output
 
 | Flag | Meaning |
 | --- | --- |
 | `-o, --out, --output <path>` | File (single input), directory (required for recursive/multi-file; recursive `-o` mirrors source dirs), or `-` for stdout |
-| `--out-type <type>` | Output format when `--out` is a directory: `jpg` `jpeg` `png` `webp` `avif` `tif` `tiff` `gif` (leading dot and case ignored). File `--out` uses the extension; `--out-type` must agree if both are set. `jpg`/`jpeg` write Ultra HDR gain maps; other types encode via sharp. PNG/WebP keep alpha. |
+| `--out-type <type>` | Output format when `--out` is a directory: `jpg` `jpeg` `png` `webp` `avif` `tif` `tiff` `gif` `mp4` (leading dot and case ignored). File `--out` uses the extension; `--out-type` must agree if both are set. `jpg`/`jpeg` write Ultra HDR gain maps; other types encode via sharp. PNG/WebP keep alpha. |
 | `--suffix <str>` | Default `-gain` |
 | `-i, --in-place` | Overwrite the original JPEG (implies force) |
 | `-f, --force` | Overwrite existing outputs (e.g. `photo-gain.jpg`) |
 | `--no-clobber` | Skip existing (default) |
 | `-n, --dry-run` | Print planned paths, write nothing |
-| `--stdout` | Write one conversion to stdout (logs on stderr) |
+| `--stdout` | Write one image conversion to stdout (logs on stderr). MP4 stdout is unsupported. |
 | `--stdin` | Read image bytes from stdin |
 
 ### Conversion
@@ -142,7 +144,7 @@ Default output: `photo.jpg` → `photo-gain.jpg` next to the input. Non-JPEG inp
 | Flag | Meaning |
 | --- | --- |
 | `-R, -r, --recursive` | Recurse into directories |
-| `--ext <list>` | Comma-separated extensions (default: jpg,jpeg,png,webp,avif,gif,tif,tiff,svg,heic,heif) |
+| `--ext <list>` | Comma-separated extensions (default: jpg,jpeg,png,webp,avif,gif,tif,tiff,svg,heic,heif,mp4) |
 | `--exclude <glob>` | Skip matching paths (repeatable) |
 
 ### Runtime
@@ -167,6 +169,8 @@ gainmap photo.jpg
 gainmap photo.jpg -o hdr.jpg
 gainmap photo.png
 gainmap photo.png --out dest.webp
+gainmap clip.mp4
+gainmap clip.mp4 --out clip-ultra.mp4
 gainmap photo.png --out ./out --out-type webp
 gainmap -R ./shots --out ./out --out-type png
 gainmap -i photo.jpg

@@ -99,10 +99,13 @@ describe("output-path", () => {
   it("auto-names .webp and .heic inputs with .jpg suffix", () => {
     assert.match(defaultOutputPath("/tmp/photo.webp"), /photo-gain\.jpg$/);
     assert.match(defaultOutputPath("/tmp/photo.heic"), /photo-gain\.jpg$/);
+    assert.match(defaultOutputPath("/tmp/clip.mp4"), /clip-gain\.mp4$/);
     const plan = planOutputs(["/tmp/a.webp"], { suffix: "-gain", stdout: false, outputIsDirectory: false });
     assert.match(plan[0]!.output ?? "", /a-gain\.jpg$/);
     const webpOut = planOutputs(["/tmp/a.webp"], { output: "/tmp/out.webp", suffix: "", stdout: false, outputIsDirectory: false });
     assert.equal(webpOut[0]!.output, "/tmp/out.webp");
+    const mp4Out = planOutputs(["/tmp/clip.mp4"], { output: "/tmp/out", suffix: "", stdout: false, outputIsDirectory: true, outType: "mp4" });
+    assert.equal(mp4Out[0]!.output, "/tmp/out/clip.mp4");
   });
 
   it("preserves uppercase JPEG extension (.JPEG)", () => {
@@ -148,6 +151,7 @@ describe("output-path", () => {
   it("normalizes out-type and agrees jpg/jpeg and tif/tiff", () => {
     assert.equal(normalizeOutType(".WEBP"), "webp");
     assert.equal(normalizeOutType("JPEG"), "jpeg");
+    assert.equal(normalizeOutType("MP4"), "mp4");
     assert.throws(() => normalizeOutType("foo"), /must be/);
     assert.throws(() => normalizeOutType(".foo"), /must be/);
     assert.equal(typesAgree("jpg", "jpeg"), true);

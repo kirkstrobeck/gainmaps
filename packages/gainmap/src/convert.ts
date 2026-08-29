@@ -4,6 +4,7 @@ import { dirname, extname } from "node:path";
 import { decodeImage } from "#src/decode.js";
 import { encodeRgbaToUltraHdrJpeg } from "#src/encode.js";
 import { encodeRgbaToRaster } from "#src/encode-raster.js";
+import { convertMp4Plan, isVideoPlan, type VideoRunner } from "#src/video.js";
 import {
   assertJpegOutputPath,
   isJpegTypeFamily,
@@ -25,6 +26,7 @@ export type ConvertOptions = {
   readonly verbose: boolean;
   readonly continueOnError: boolean;
   readonly jobs: number;
+  readonly videoRunner?: VideoRunner;
 };
 
 export type ConvertResult = {
@@ -88,6 +90,7 @@ export async function convertPlan(
   writeStdout: (bytes: Uint8Array) => void,
   log: (message: string) => void,
 ): Promise<ConvertResult> {
+  if (isVideoPlan(plan)) return convertMp4Plan(plan, options, log);
   if (plan.output != null && !options.force && !options.dryRun && (await exists(plan.output))) {
     log("skip (exists, pass -f to overwrite) " + plan.input + " -> " + plan.output);
     return { input: plan.input, output: plan.output, skipped: true, bytesOut: 0, note: "exists" };
