@@ -52,9 +52,7 @@ export function videoFilter(options: Pick<VideoConvertOptions, "boost" | "headro
   const contrast = Number((1 + exposure * 0.08).toFixed(3));
   const brightness = Number(Math.min(0.12, exposure * 0.025).toFixed(3));
   return [
-    "format=yuv420p10le",
     `eq=contrast=${contrast}:brightness=${brightness}:saturation=1`,
-    "zscale=primaries=bt2020:transfer=smpte2084:matrix=bt2020nc:range=tv",
     "format=yuv420p10le",
   ].join(",");
 }

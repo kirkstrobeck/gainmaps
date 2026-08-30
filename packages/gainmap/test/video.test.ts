@@ -61,7 +61,8 @@ describe("video mp4 helpers", () => {
     assert.equal(videoHeadroom({ headroom: 0.5 }), 1);
     assert.equal(videoHeadroom({ headroom: 2 }), 2);
     assert.ok(videoHeadroom({ boost: 0.5 }) > 1);
-    assert.match(videoFilter({ headroom: 16 }), /zscale=primaries=bt2020/);
+    assert.doesNotMatch(videoFilter({ headroom: 16 }), /zscale/);
+    assert.match(videoFilter({ headroom: 16 }), /format=yuv420p10le/);
     assert.match(videoFilter({ headroom: 1 }), /brightness=0/);
     const args = ffmpegMp4Args("in.mp4", "out.mp4", { ...options, quality: 80, headroom: 4 });
     assert.deepEqual(args.slice(0, 5), ["-hide_banner", "-nostdin", "-y", "-i", "in.mp4"]);

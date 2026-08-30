@@ -6,25 +6,14 @@ REPO_ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)"
 PKG_DIR="$REPO_ROOT/packages/gainmap"
 CLI="$PKG_DIR/dist/cli.js"
 
-run_pnpm() {
-  if command -v pnpm >/dev/null 2>&1; then
-    pnpm --dir "$REPO_ROOT" "$@"
-    return
-  fi
-  if command -v corepack >/dev/null 2>&1; then
-    corepack pnpm --dir "$REPO_ROOT" "$@"
-    return
-  fi
-  echo "gainmap-mp4: pnpm is required to prepare the local CLI. Install pnpm or run corepack enable." >&2
-  exit 2
-}
-
 if [ ! -d "$PKG_DIR/node_modules/sharp" ]; then
-  run_pnpm install --filter gainmap
+  echo "gainmap-mp4: local dependencies are missing. From the repo, run: pnpm install --filter gainmap" >&2
+  exit 2
 fi
 
 if [ ! -f "$CLI" ]; then
-  run_pnpm --filter gainmap build >/dev/null
+  echo "gainmap-mp4: built CLI is missing. From the repo, run: pnpm --filter gainmap build" >&2
+  exit 2
 fi
 
 if ! command -v ffmpeg >/dev/null 2>&1; then
