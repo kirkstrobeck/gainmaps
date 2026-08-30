@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+REPO_ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)"
+CLI="$REPO_ROOT/packages/gainmap/dist/cli.js"
+
+if [ ! -f "$CLI" ]; then
+  if command -v pnpm >/dev/null 2>&1; then
+    pnpm --dir "$REPO_ROOT" --filter gainmap build >/dev/null
+  elif command -v corepack >/dev/null 2>&1; then
+    corepack pnpm --dir "$REPO_ROOT" --filter gainmap build >/dev/null
+  else
+    echo "gainmap-mp4: packages/gainmap/dist/cli.js is missing; run pnpm --filter gainmap build in $REPO_ROOT" >&2
+    exit 2
+  fi
+fi
+
+exec node "$CLI" --offline "$@"
