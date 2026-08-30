@@ -11,10 +11,13 @@ import {
   ffmpegMp4Args,
   isMp4Path,
   isVideoPlan,
+  pqLutExpression,
   spawnProcess,
   videoCrf,
   videoFilter,
   videoHeadroom,
+  videoPeakNits,
+  x265HdrParams,
 } from "#src/video.js";
 
 const options: ConvertOptions = {
@@ -61,12 +64,25 @@ describe("video mp4 helpers", () => {
     assert.equal(videoHeadroom({ headroom: 0.5 }), 1);
     assert.equal(videoHeadroom({ headroom: 2 }), 2);
     assert.ok(videoHeadroom({ boost: 0.5 }) > 1);
-    assert.doesNotMatch(videoFilter({ headroom: 16 }), /zscale/);
-    assert.match(videoFilter({ headroom: 16 }), /format=yuv420p10le/);
-    assert.match(videoFilter({ headroom: 1 }), /brightness=0/);
+    assert.equal(videoPeakNits({ headroom: 0.5 }), 100);
+    assert.equal(videoPeakNits({ headroom: 4 }), 400);
+    assert.equal(videoPeakNits({ headroom: 16 }), 1000);
+    assert.match(pqLutExpression({ headroom: 4 }), /0\.04/);
+    const filter = videoFilter({ headroom: 16 });
+    assert.doesNotMatch(filter, /zscale|eq=/);
+    assert.match(filter, /colorspace=iall=bt709:all=bt2020/);
+    assert.match(filter, /format=gbrp16le/);
+    assert.match(filter, /lutrgb=/);
+    assert.match(filter, /format=yuv420p10le/);
+    const hdrParams = x265HdrParams({ headroom: 4 });
+    assert.match(hdrParams, /transfer=smpte2084/);
+    assert.match(hdrParams, /master-display=/);
+    assert.match(hdrParams, /max-cll=400,160/);
     const args = ffmpegMp4Args("in.mp4", "out.mp4", { ...options, quality: 80, headroom: 4 });
     assert.deepEqual(args.slice(0, 5), ["-hide_banner", "-nostdin", "-y", "-i", "in.mp4"]);
     assert.ok(args.includes("libx265"));
+    assert.ok(args.includes("-x265-params"));
+    assert.ok(args.some((arg) => arg.includes("max-cll=400,160")));
     assert.ok(args.includes("bt2020"));
     assert.ok(args.includes("smpte2084"));
     assert.ok(args.includes("hvc1"));
@@ -116,7 +132,7 @@ describe("mp4 conversion", () => {
     );
     assert.equal(converted.skipped, false);
     assert.equal(converted.bytesOut, Buffer.byteLength("converted-video"));
-    assert.equal(converted.note, "Ultra HDR MP4 · 3.00x");
+    assert.equal(converted.note, "Ultra HDR MP4 · 3.00x · 300 nits");
     assert.equal(calls[0]!.command, "ffmpeg");
     assert.ok(calls[0]!.args.includes("-c:a"));
     assert.equal(await readFile(output, "utf8"), "converted-video");

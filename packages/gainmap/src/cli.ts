@@ -21,7 +21,7 @@ import { checkUpdate, printUpdateNotice, selfUpdate, shouldSkipUpdateCheck } fro
 import { readPackageVersion } from "#src/version.js";
 
 export function usage(): string {
-  return `gainmap ${readPackageVersion()} — convert images to Ultra HDR JPEG and MP4 videos
+  return `gainmap ${readPackageVersion()} — convert images to Ultra HDR JPEG and SDR videos to Ultra MP4
 
 Usage
   gainmap [options] <input...>
@@ -32,7 +32,7 @@ Usage
 Input is a file, a directory, or - for image stdin. Directories convert matching
 images and MP4 videos in that folder. Use -R/--recursive for nested trees.
 extract-sdr writes the primary SDR JPEG (first SOI..EOI) from a gain map.
-MP4 output uses ffmpeg/libx265 and writes an HDR MP4 transcode, not a JPEG gain-map container.
+MP4 output uses ffmpeg/libx265 to convert SDR video to HDR10-style Ultra MP4, not a JPEG gain-map container.
 
 Output
   -o, --out, --output <path>
@@ -41,7 +41,7 @@ Output
       --out-type <type> Output format when --out is a directory (jpg jpeg png
                         webp avif tif tiff gif mp4). File --out uses the extension;
                         --out-type must agree if both are set. jpg/jpeg write
-                        Ultra HDR gain maps; mp4 writes an HDR video transcode; other types encode via sharp. Unknown flags error. HEIC/HEIF/SVG are input only.
+                        Ultra HDR gain maps; mp4 writes an SDR-to-HDR10 Ultra video transcode; other types encode via sharp. Unknown flags error. HEIC/HEIF/SVG are input only.
       --suffix <str>    Default -gain (photo.jpg -> photo-gain.jpg)
   -i, --in-place        Overwrite the original JPEG (implies force)
   -f, --force           Overwrite existing outputs (e.g. photo-gain.jpg)

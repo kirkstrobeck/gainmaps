@@ -46,15 +46,39 @@ export function videoCrf(quality: number | undefined): number {
   return Math.round(32 - ((clamped - 1) / 99) * 20);
 }
 
+export function videoPeakNits(options: Pick<VideoConvertOptions, "boost" | "headroom">): number {
+  return Math.round(Math.max(100, Math.min(1000, videoHeadroom(options) * 100)));
+}
+
+export function pqLutExpression(options: Pick<VideoConvertOptions, "boost" | "headroom">): string {
+  const normalizedPeak = Number((videoPeakNits(options) / 10000).toFixed(5));
+  const linear = "pow(max(val/maxval\\,0)\\,2.2)*" + normalizedPeak;
+  const powered = "pow(" + linear + "\\,0.1593017578125)";
+  const pq = "(0.8359375+18.8515625*" + powered + ")/(1+18.6875*" + powered + ")";
+  return "clip(maxval*pow(" + pq + "\\,78.84375)\\,0\\,maxval)";
+}
+
 export function videoFilter(options: Pick<VideoConvertOptions, "boost" | "headroom">): string {
-  const headroom = videoHeadroom(options);
-  const exposure = Math.max(0, Math.min(2, Math.log2(headroom)));
-  const contrast = Number((1 + exposure * 0.08).toFixed(3));
-  const brightness = Number(Math.min(0.12, exposure * 0.025).toFixed(3));
+  const pq = pqLutExpression(options);
   return [
-    `eq=contrast=${contrast}:brightness=${brightness}:saturation=1`,
+    "colorspace=iall=bt709:all=bt2020:format=yuv444p10:fast=0",
+    "format=gbrp16le",
+    "lutrgb=r=" + pq + ":g=" + pq + ":b=" + pq,
     "format=yuv420p10le",
   ].join(",");
+}
+
+export function x265HdrParams(options: Pick<VideoConvertOptions, "boost" | "headroom">): string {
+  const peak = videoPeakNits(options);
+  return [
+    "hdr-opt=1",
+    "repeat-headers=1",
+    "colorprim=bt2020",
+    "transfer=smpte2084",
+    "colormatrix=bt2020nc",
+    "master-display=G(8500,39850)B(6550,2300)R(35400,14600)WP(15635,16450)L(10000000,1)",
+    "max-cll=" + peak + "," + Math.round(peak * 0.4),
+  ].join(":");
 }
 
 export function ffmpegMp4Args(input: string, output: string, options: VideoConvertOptions): readonly string[] {
@@ -74,6 +98,8 @@ export function ffmpegMp4Args(input: string, output: string, options: VideoConve
     "medium",
     "-crf",
     String(videoCrf(options.quality)),
+    "-x265-params",
+    x265HdrParams(options),
     "-vf",
     videoFilter(options),
     "-color_primaries",
@@ -110,7 +136,7 @@ export async function convertMp4Plan(
   const runner = options.videoRunner ?? spawnProcess;
   await runner("ffmpeg", ffmpegMp4Args(plan.input, plan.output!, options));
   const info = await stat(plan.output!);
-  const note = "Ultra HDR MP4 · " + videoHeadroom(options).toFixed(2) + "x";
+  const note = "Ultra HDR MP4 · " + videoHeadroom(options).toFixed(2) + "x · " + videoPeakNits(options) + " nits";
   log(plan.input + " -> " + plan.output);
   return { input: plan.input, output: plan.output, skipped: false, bytesOut: info.size, note };
 }
