@@ -3,17 +3,33 @@ set -euo pipefail
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 REPO_ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)"
-CLI="$REPO_ROOT/packages/gainmap/dist/cli.js"
+PKG_DIR="$REPO_ROOT/packages/gainmap"
+CLI="$PKG_DIR/dist/cli.js"
+
+run_pnpm() {
+  if command -v pnpm >/dev/null 2>&1; then
+    pnpm --dir "$REPO_ROOT" "$@"
+    return
+  fi
+  if command -v corepack >/dev/null 2>&1; then
+    corepack pnpm --dir "$REPO_ROOT" "$@"
+    return
+  fi
+  echo "gainmap-mp4: pnpm is required to prepare the local CLI. Install pnpm or run corepack enable." >&2
+  exit 2
+}
+
+if [ ! -d "$PKG_DIR/node_modules/sharp" ]; then
+  run_pnpm install --filter gainmap
+fi
 
 if [ ! -f "$CLI" ]; then
-  if command -v pnpm >/dev/null 2>&1; then
-    pnpm --dir "$REPO_ROOT" --filter gainmap build >/dev/null
-  elif command -v corepack >/dev/null 2>&1; then
-    corepack pnpm --dir "$REPO_ROOT" --filter gainmap build >/dev/null
-  else
-    echo "gainmap-mp4: packages/gainmap/dist/cli.js is missing; run pnpm --filter gainmap build in $REPO_ROOT" >&2
-    exit 2
-  fi
+  run_pnpm --filter gainmap build >/dev/null
+fi
+
+if ! command -v ffmpeg >/dev/null 2>&1; then
+  echo "gainmap-mp4: MP4 conversion requires ffmpeg. Install it with: brew install ffmpeg" >&2
+  exit 2
 fi
 
 exec node "$CLI" --offline "$@"
