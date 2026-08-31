@@ -32,7 +32,7 @@ Usage
 Input is a file, a directory, or - for image stdin. Directories convert matching
 images and MP4 videos in that folder. Use -R/--recursive for nested trees.
 extract-sdr writes the primary SDR JPEG (first SOI..EOI) from a gain map.
-MP4 output uses ffmpeg to convert SDR video to HDR10-style Ultra MP4; macOS prefers Apple VideoToolbox for QuickTime playback, and other platforms use x265.
+MP4 output uses ffmpeg to convert SDR video to Ultra MP4; macOS uses Apple VideoToolbox with Rec.2020 HLG for QuickTime playback, and other platforms use x265 HDR10/PQ.
 
 Output
   -o, --out, --output <path>
@@ -41,7 +41,7 @@ Output
       --out-type <type> Output format when --out is a directory (jpg jpeg png
                         webp avif tif tiff gif mp4). File --out uses the extension;
                         --out-type must agree if both are set. jpg/jpeg write
-                        Ultra HDR gain maps; mp4 writes an SDR-to-HDR10 Ultra video transcode; other types encode via sharp. Unknown flags error. HEIC/HEIF/SVG are input only.
+                        Ultra HDR gain maps; mp4 writes an SDR-to-Ultra video transcode; other types encode via sharp. Unknown flags error. HEIC/HEIF/SVG are input only.
       --suffix <str>    Default -gain (photo.jpg -> photo-gain.jpg)
   -i, --in-place        Overwrite the original JPEG (implies force)
   -f, --force           Overwrite existing outputs (e.g. photo-gain.jpg)

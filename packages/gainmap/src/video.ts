@@ -9,6 +9,7 @@ type OutputPlan = { readonly input: string; readonly output: string | null; read
 export type VideoRunner = (command: string, args: readonly string[]) => Promise<void>;
 
 export type VideoEncoder = "hevc_videotoolbox" | "libx265";
+export type VideoTransfer = "hlg" | "pq";
 
 export type VideoConvertOptions = {
   readonly boost?: number;
@@ -62,6 +63,17 @@ export function videoPeakNits(options: Pick<VideoConvertOptions, "boost" | "head
   return Math.round(Math.max(100, Math.min(1000, videoHeadroom(options) * 100)));
 }
 
+export function preferredVideoTransfer(encoder: VideoEncoder): VideoTransfer {
+  return encoder === "hevc_videotoolbox" ? "hlg" : "pq";
+}
+
+export function hlgLutExpression(options: Pick<VideoConvertOptions, "boost" | "headroom">): string {
+  const scale = Number(Math.min(6, videoHeadroom(options)).toFixed(5));
+  const linear = "min(pow(max(val/maxval\\,0)\\,2.2)*" + scale + "\\,1)";
+  return "maxval*pow(" + linear + "\\,0.42)";
+}
+
+
 export function pqLutExpression(options: Pick<VideoConvertOptions, "boost" | "headroom">): string {
   const normalizedPeak = Number((videoPeakNits(options) / 10000).toFixed(5));
   const linear = "pow(max(val/maxval\\,0)\\,2.2)*" + normalizedPeak;
@@ -70,12 +82,12 @@ export function pqLutExpression(options: Pick<VideoConvertOptions, "boost" | "he
   return "clip(maxval*pow(" + pq + "\\,78.84375)\\,0\\,maxval)";
 }
 
-export function videoFilter(options: Pick<VideoConvertOptions, "boost" | "headroom">): string {
-  const pq = pqLutExpression(options);
+export function videoFilter(options: Pick<VideoConvertOptions, "boost" | "headroom">, transfer: VideoTransfer = "pq"): string {
+  const lut = transfer === "hlg" ? hlgLutExpression(options) : pqLutExpression(options);
   return [
     "colorspace=iall=bt709:all=bt2020:format=yuv444p10:fast=0",
     "format=gbrp16le",
-    "lutrgb=r=" + pq + ":g=" + pq + ":b=" + pq,
+    "lutrgb=r=" + lut + ":g=" + lut + ":b=" + lut,
     "format=yuv420p10le",
   ].join(",");
 }
@@ -95,6 +107,8 @@ export function x265HdrParams(options: Pick<VideoConvertOptions, "boost" | "head
 }
 
 export function ffmpegMp4Args(input: string, output: string, options: VideoConvertOptions, encoder: VideoEncoder = preferredVideoEncoder()): readonly string[] {
+  const transfer = preferredVideoTransfer(encoder);
+  const colorTransfer = transfer === "hlg" ? "arib-std-b67" : "smpte2084";
   const encoderArgs = encoder === "hevc_videotoolbox"
     ? [
         "-c:v",
@@ -127,13 +141,13 @@ export function ffmpegMp4Args(input: string, output: string, options: VideoConve
     "0:a?",
     ...encoderArgs,
     "-vf",
-    videoFilter(options),
+    videoFilter(options, transfer),
     "-pix_fmt",
     pixelFormat,
     "-color_primaries",
     "bt2020",
     "-color_trc",
-    "smpte2084",
+    colorTransfer,
     "-colorspace",
     "bt2020nc",
     "-tag:v",
@@ -141,7 +155,7 @@ export function ffmpegMp4Args(input: string, output: string, options: VideoConve
     "-c:a",
     "copy",
     "-movflags",
-    "+faststart",
+    "+faststart+write_colr",
     output,
   ];
 }
@@ -171,7 +185,7 @@ export async function convertMp4Plan(
     await runner("ffmpeg", ffmpegMp4Args(plan.input, plan.output!, options, encoder));
   }
   const info = await stat(plan.output!);
-  const encoderNote = encoder === "hevc_videotoolbox" ? " · QuickTime" : "";
+  const encoderNote = encoder === "hevc_videotoolbox" ? " · QuickTime HLG" : " · HDR10 PQ";
   const note = "Ultra HDR MP4 · " + videoHeadroom(options).toFixed(2) + "x · " + videoPeakNits(options) + " nits" + encoderNote;
   log(plan.input + " -> " + plan.output);
   return { input: plan.input, output: plan.output, skipped: false, bytesOut: info.size, note };

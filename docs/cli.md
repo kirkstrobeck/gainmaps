@@ -1,6 +1,6 @@
 # gainmap CLI
 
-Convert photos, logos, and other images into Ultra HDR JPEG files with an embedded gain map (ISO/TS 21496-1 / Android Ultra HDR / Apple Adaptive HDR). The CLI also converts SDR MP4 videos into HDR10-style Ultra MP4 output. This is the same keep-base image encoder as [gainmaps.com](https://gainmaps.com) convert.
+Convert photos, logos, and other images into Ultra HDR JPEG files with an embedded gain map (ISO/TS 21496-1 / Android Ultra HDR / Apple Adaptive HDR). The CLI also converts SDR MP4 videos into Ultra MP4 output, using QuickTime-friendly Rec.2020 HLG on macOS and HDR10/PQ elsewhere. This is the same keep-base image encoder as [gainmaps.com](https://gainmaps.com) convert.
 
 A gain-map JPEG is still a normal JPEG: every app can open the SDR base. HDR displays expand highlights using the second layer.
 
@@ -100,7 +100,7 @@ Each stage runs `e2e/run.sh` which covers --help, --version, all 16 scenarios, a
 - Alpine/musl is unsupported by the Dockerfile. Use `node:24-bookworm-slim` (or another glibc image).
 - Animated GIF: first frame only.
 - Very large images are memory-bound (the whole raster is decoded).
-- MP4 output is an SDR-to-HDR10 Ultra video transcode: BT.709 input is expanded through a PQ transfer LUT, converted/tagged as BT.2020/PQ, encoded as Apple VideoToolbox HEVC Main10/HVC1 on macOS or 10-bit x265/HVC1 elsewhere, and stamped with HDR10 mastering/content-light metadata. It is video HDR, not an ISO still-image gain-map JPEG container.
+- MP4 output is an SDR-to-Ultra video transcode. On macOS, BT.709 input is expanded through an HLG transfer LUT, converted/tagged as BT.2020 HLG, and encoded with Apple VideoToolbox HEVC Main10/HVC1 for QuickTime. Elsewhere, BT.709 input is expanded through a PQ transfer LUT, converted/tagged as BT.2020/PQ, encoded as 10-bit x265/HVC1, and stamped with HDR10 mastering/content-light metadata. It is video HDR, not an ISO still-image gain-map JPEG container.
 - SVG rasterization is Sharp/librsvg's subset of SVG. HEIC is input only. Unknown flags exit 2 as unsupported option.
 
 ## Usage

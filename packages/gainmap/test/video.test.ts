@@ -11,8 +11,10 @@ import {
   ffmpegMp4Args,
   isMp4Path,
   isVideoPlan,
+  hlgLutExpression,
   pqLutExpression,
   preferredVideoEncoder,
+  preferredVideoTransfer,
   spawnProcess,
   videoCrf,
   videoFilter,
@@ -69,6 +71,8 @@ describe("video mp4 helpers", () => {
     assert.equal(preferredVideoEncoder("darwin", {}), "hevc_videotoolbox");
     assert.equal(preferredVideoEncoder("linux", {}), "libx265");
     assert.equal(preferredVideoEncoder("darwin", { GAINMAP_VIDEO_ENCODER: "libx265" }), "libx265");
+    assert.equal(preferredVideoTransfer("hevc_videotoolbox"), "hlg");
+    assert.equal(preferredVideoTransfer("libx265"), "pq");
     assert.equal(videoHeadroom({ headroom: 0.5 }), 1);
     assert.equal(videoHeadroom({ headroom: 2 }), 2);
     assert.ok(videoHeadroom({ boost: 0.5 }) > 1);
@@ -76,12 +80,14 @@ describe("video mp4 helpers", () => {
     assert.equal(videoPeakNits({ headroom: 4 }), 400);
     assert.equal(videoPeakNits({ headroom: 16 }), 1000);
     assert.match(pqLutExpression({ headroom: 4 }), /0\.04/);
-    const filter = videoFilter({ headroom: 16 });
+    assert.match(hlgLutExpression({ headroom: 4 }), /0\.42/g);
+    const filter = videoFilter({ headroom: 16 }, "pq");
     assert.doesNotMatch(filter, /zscale|eq=/);
     assert.match(filter, /colorspace=iall=bt709:all=bt2020/);
     assert.match(filter, /format=gbrp16le/);
     assert.match(filter, /lutrgb=/);
     assert.match(filter, /format=yuv420p10le/);
+    assert.match(videoFilter({ headroom: 4 }, "hlg"), /0\.42/g);
     const hdrParams = x265HdrParams({ headroom: 4 });
     assert.match(hdrParams, /transfer=smpte2084/);
     assert.match(hdrParams, /master-display=/);
@@ -95,6 +101,7 @@ describe("video mp4 helpers", () => {
     assert.ok(x265Args.includes("bt2020"));
     assert.ok(x265Args.includes("smpte2084"));
     assert.ok(x265Args.includes("hvc1"));
+    assert.ok(x265Args.includes("+faststart+write_colr"));
     assert.equal(x265Args.at(-1), "out.mp4");
 
     const quickTimeArgs = ffmpegMp4Args("in.mp4", "out.mp4", { ...options, quality: 80, headroom: 4 }, "hevc_videotoolbox");
@@ -102,7 +109,9 @@ describe("video mp4 helpers", () => {
     assert.ok(quickTimeArgs.includes("main10"));
     assert.ok(quickTimeArgs.includes("-q:v"));
     assert.ok(quickTimeArgs.includes("p010le"));
+    assert.ok(quickTimeArgs.includes("arib-std-b67"));
     assert.ok(!quickTimeArgs.includes("-x265-params"));
+    assert.ok(quickTimeArgs.includes("+faststart+write_colr"));
     assert.equal(quickTimeArgs.at(-1), "out.mp4");
   });
 });
@@ -149,7 +158,7 @@ describe("mp4 conversion", () => {
     );
     assert.equal(converted.skipped, false);
     assert.equal(converted.bytesOut, Buffer.byteLength("converted-video"));
-    assert.equal(converted.note, "Ultra HDR MP4 · 3.00x · 300 nits");
+    assert.equal(converted.note, "Ultra HDR MP4 · 3.00x · 300 nits · HDR10 PQ");
     assert.equal(calls[0]!.command, "ffmpeg");
     assert.ok(calls[0]!.args.includes("-c:a"));
     assert.equal(await readFile(output, "utf8"), "converted-video");
@@ -177,7 +186,7 @@ describe("mp4 conversion", () => {
         },
         () => undefined,
       );
-      assert.equal(converted.note, "Ultra HDR MP4 · 3.34x · 334 nits");
+      assert.equal(converted.note, "Ultra HDR MP4 · 3.34x · 334 nits · HDR10 PQ");
     } finally {
       if (originalEncoder == null) delete process.env.GAINMAP_VIDEO_ENCODER;
       else process.env.GAINMAP_VIDEO_ENCODER = originalEncoder;
