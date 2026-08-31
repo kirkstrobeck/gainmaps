@@ -8,6 +8,8 @@ type OutputPlan = { readonly input: string; readonly output: string | null; read
 
 export type VideoRunner = (command: string, args: readonly string[]) => Promise<void>;
 
+export type VideoEncoder = "hevc_videotoolbox" | "libx265";
+
 export type VideoConvertOptions = {
   readonly boost?: number;
   readonly headroom?: number;
@@ -46,6 +48,16 @@ export function videoCrf(quality: number | undefined): number {
   return Math.round(32 - ((clamped - 1) / 99) * 20);
 }
 
+export function videoToolboxQuality(quality: number | undefined): number {
+  if (quality == null) return 72;
+  return Math.max(1, Math.min(100, Math.round(quality)));
+}
+
+export function preferredVideoEncoder(platform: NodeJS.Platform = process.platform, env: NodeJS.ProcessEnv = process.env): VideoEncoder {
+  if (env.GAINMAP_VIDEO_ENCODER === "hevc_videotoolbox" || env.GAINMAP_VIDEO_ENCODER === "libx265") return env.GAINMAP_VIDEO_ENCODER;
+  return platform === "darwin" ? "hevc_videotoolbox" : "libx265";
+}
+
 export function videoPeakNits(options: Pick<VideoConvertOptions, "boost" | "headroom">): number {
   return Math.round(Math.max(100, Math.min(1000, videoHeadroom(options) * 100)));
 }
@@ -71,6 +83,7 @@ export function videoFilter(options: Pick<VideoConvertOptions, "boost" | "headro
 export function x265HdrParams(options: Pick<VideoConvertOptions, "boost" | "headroom">): string {
   const peak = videoPeakNits(options);
   return [
+    "hdr10=1",
     "hdr-opt=1",
     "repeat-headers=1",
     "colorprim=bt2020",
@@ -81,7 +94,27 @@ export function x265HdrParams(options: Pick<VideoConvertOptions, "boost" | "head
   ].join(":");
 }
 
-export function ffmpegMp4Args(input: string, output: string, options: VideoConvertOptions): readonly string[] {
+export function ffmpegMp4Args(input: string, output: string, options: VideoConvertOptions, encoder: VideoEncoder = preferredVideoEncoder()): readonly string[] {
+  const encoderArgs = encoder === "hevc_videotoolbox"
+    ? [
+        "-c:v",
+        "hevc_videotoolbox",
+        "-profile:v",
+        "main10",
+        "-q:v",
+        String(videoToolboxQuality(options.quality)),
+      ]
+    : [
+        "-c:v",
+        "libx265",
+        "-preset",
+        "medium",
+        "-crf",
+        String(videoCrf(options.quality)),
+        "-x265-params",
+        x265HdrParams(options),
+      ];
+  const pixelFormat = encoder === "hevc_videotoolbox" ? "p010le" : "yuv420p10le";
   return [
     "-hide_banner",
     "-nostdin",
@@ -92,16 +125,11 @@ export function ffmpegMp4Args(input: string, output: string, options: VideoConve
     "0:v:0",
     "-map",
     "0:a?",
-    "-c:v",
-    "libx265",
-    "-preset",
-    "medium",
-    "-crf",
-    String(videoCrf(options.quality)),
-    "-x265-params",
-    x265HdrParams(options),
+    ...encoderArgs,
     "-vf",
     videoFilter(options),
+    "-pix_fmt",
+    pixelFormat,
     "-color_primaries",
     "bt2020",
     "-color_trc",
@@ -134,9 +162,17 @@ export async function convertMp4Plan(
   }
   await mkdir(dirname(plan.output!), { recursive: true });
   const runner = options.videoRunner ?? spawnProcess;
-  await runner("ffmpeg", ffmpegMp4Args(plan.input, plan.output!, options));
+  let encoder = preferredVideoEncoder();
+  try {
+    await runner("ffmpeg", ffmpegMp4Args(plan.input, plan.output!, options, encoder));
+  } catch (error) {
+    if (encoder !== "hevc_videotoolbox") throw error;
+    encoder = "libx265";
+    await runner("ffmpeg", ffmpegMp4Args(plan.input, plan.output!, options, encoder));
+  }
   const info = await stat(plan.output!);
-  const note = "Ultra HDR MP4 · " + videoHeadroom(options).toFixed(2) + "x · " + videoPeakNits(options) + " nits";
+  const encoderNote = encoder === "hevc_videotoolbox" ? " · QuickTime" : "";
+  const note = "Ultra HDR MP4 · " + videoHeadroom(options).toFixed(2) + "x · " + videoPeakNits(options) + " nits" + encoderNote;
   log(plan.input + " -> " + plan.output);
   return { input: plan.input, output: plan.output, skipped: false, bytesOut: info.size, note };
 }
@@ -150,7 +186,7 @@ export function spawnProcess(command: string, args: readonly string[]): Promise<
     });
     child.on("error", (error: NodeJS.ErrnoException) => {
       if (error.code === "ENOENT") {
-        reject(Object.assign(new Error("MP4 conversion requires ffmpeg with libx265 support in PATH"), { code: "UNSUPPORTED" }));
+        reject(Object.assign(new Error("MP4 conversion requires ffmpeg with hevc_videotoolbox or libx265 support in PATH"), { code: "UNSUPPORTED" }));
         return;
       }
       reject(error);

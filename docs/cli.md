@@ -88,7 +88,7 @@ Each stage runs `e2e/run.sh` which covers --help, --version, all 16 scenarios, a
 - Node.js 24+ for npm and source installs (`hdrify` declares `>=24`). Homebrew installs Node for you. The curl installer bundles Node 24 into `$HOME/.gainmap/runtime`. The Docker image includes Node.
 - Sharp's platform binary, downloaded at `npm install` (needs network at **install** time, not when converting)
 - `heic-decode` is bundled (HEIC does **not** need system libheif)
-- MP4 conversion requires `ffmpeg` with `libx265` available in PATH
+- MP4 conversion requires `ffmpeg` with Apple `hevc_videotoolbox` or `libx265` available in PATH
 
 **Not required**
 
@@ -100,7 +100,7 @@ Each stage runs `e2e/run.sh` which covers --help, --version, all 16 scenarios, a
 - Alpine/musl is unsupported by the Dockerfile. Use `node:24-bookworm-slim` (or another glibc image).
 - Animated GIF: first frame only.
 - Very large images are memory-bound (the whole raster is decoded).
-- MP4 output is an SDR-to-HDR10 Ultra video transcode: BT.709 input is expanded through a PQ transfer LUT, converted/tagged as BT.2020/PQ, encoded as 10-bit x265/HVC1, and stamped with HDR10 mastering/content-light metadata. It is video HDR, not an ISO still-image gain-map JPEG container.
+- MP4 output is an SDR-to-HDR10 Ultra video transcode: BT.709 input is expanded through a PQ transfer LUT, converted/tagged as BT.2020/PQ, encoded as Apple VideoToolbox HEVC Main10/HVC1 on macOS or 10-bit x265/HVC1 elsewhere, and stamped with HDR10 mastering/content-light metadata. It is video HDR, not an ISO still-image gain-map JPEG container.
 - SVG rasterization is Sharp/librsvg's subset of SVG. HEIC is input only. Unknown flags exit 2 as unsupported option.
 
 ## Usage

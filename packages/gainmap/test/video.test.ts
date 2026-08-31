@@ -12,11 +12,13 @@ import {
   isMp4Path,
   isVideoPlan,
   pqLutExpression,
+  preferredVideoEncoder,
   spawnProcess,
   videoCrf,
   videoFilter,
   videoHeadroom,
   videoPeakNits,
+  videoToolboxQuality,
   x265HdrParams,
 } from "#src/video.js";
 
@@ -61,6 +63,12 @@ describe("video mp4 helpers", () => {
     assert.equal(videoCrf(100), 12);
     assert.equal(videoCrf(101), 12);
     assert.equal(videoCrf(0), 32);
+    assert.equal(videoToolboxQuality(undefined), 72);
+    assert.equal(videoToolboxQuality(101), 100);
+    assert.equal(videoToolboxQuality(0), 1);
+    assert.equal(preferredVideoEncoder("darwin", {}), "hevc_videotoolbox");
+    assert.equal(preferredVideoEncoder("linux", {}), "libx265");
+    assert.equal(preferredVideoEncoder("darwin", { GAINMAP_VIDEO_ENCODER: "libx265" }), "libx265");
     assert.equal(videoHeadroom({ headroom: 0.5 }), 1);
     assert.equal(videoHeadroom({ headroom: 2 }), 2);
     assert.ok(videoHeadroom({ boost: 0.5 }) > 1);
@@ -78,15 +86,24 @@ describe("video mp4 helpers", () => {
     assert.match(hdrParams, /transfer=smpte2084/);
     assert.match(hdrParams, /master-display=/);
     assert.match(hdrParams, /max-cll=400,160/);
-    const args = ffmpegMp4Args("in.mp4", "out.mp4", { ...options, quality: 80, headroom: 4 });
-    assert.deepEqual(args.slice(0, 5), ["-hide_banner", "-nostdin", "-y", "-i", "in.mp4"]);
-    assert.ok(args.includes("libx265"));
-    assert.ok(args.includes("-x265-params"));
-    assert.ok(args.some((arg) => arg.includes("max-cll=400,160")));
-    assert.ok(args.includes("bt2020"));
-    assert.ok(args.includes("smpte2084"));
-    assert.ok(args.includes("hvc1"));
-    assert.equal(args.at(-1), "out.mp4");
+    const x265Args = ffmpegMp4Args("in.mp4", "out.mp4", { ...options, quality: 80, headroom: 4 }, "libx265");
+    assert.deepEqual(x265Args.slice(0, 5), ["-hide_banner", "-nostdin", "-y", "-i", "in.mp4"]);
+    assert.ok(x265Args.includes("libx265"));
+    assert.ok(x265Args.includes("-x265-params"));
+    assert.ok(x265Args.some((arg) => arg.includes("hdr10=1")));
+    assert.ok(x265Args.some((arg) => arg.includes("max-cll=400,160")));
+    assert.ok(x265Args.includes("bt2020"));
+    assert.ok(x265Args.includes("smpte2084"));
+    assert.ok(x265Args.includes("hvc1"));
+    assert.equal(x265Args.at(-1), "out.mp4");
+
+    const quickTimeArgs = ffmpegMp4Args("in.mp4", "out.mp4", { ...options, quality: 80, headroom: 4 }, "hevc_videotoolbox");
+    assert.ok(quickTimeArgs.includes("hevc_videotoolbox"));
+    assert.ok(quickTimeArgs.includes("main10"));
+    assert.ok(quickTimeArgs.includes("-q:v"));
+    assert.ok(quickTimeArgs.includes("p010le"));
+    assert.ok(!quickTimeArgs.includes("-x265-params"));
+    assert.equal(quickTimeArgs.at(-1), "out.mp4");
   });
 });
 
@@ -136,6 +153,37 @@ describe("mp4 conversion", () => {
     assert.equal(calls[0]!.command, "ffmpeg");
     assert.ok(calls[0]!.args.includes("-c:a"));
     assert.equal(await readFile(output, "utf8"), "converted-video");
+  });
+
+
+  it("falls back from Apple VideoToolbox to x265 when the default macOS encoder is unavailable", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "gainmap-video-fallback-"));
+    const input = await fakeMp4(dir);
+    const output = join(dir, "clip-gain.mp4");
+    const originalEncoder = process.env.GAINMAP_VIDEO_ENCODER;
+    process.env.GAINMAP_VIDEO_ENCODER = "hevc_videotoolbox";
+    const calls: Array<{ command: string; args: readonly string[] }> = [];
+    try {
+      const converted = await convertMp4Plan(
+        { input, output, stdout: false },
+        {
+          ...options,
+          force: true,
+          videoRunner: async (command, args) => {
+            calls.push({ command, args });
+            if (args.includes("hevc_videotoolbox")) throw new Error("no VideoToolbox");
+            await writeFile(output, Buffer.from("fallback-video"));
+          },
+        },
+        () => undefined,
+      );
+      assert.equal(converted.note, "Ultra HDR MP4 · 3.34x · 334 nits");
+    } finally {
+      if (originalEncoder == null) delete process.env.GAINMAP_VIDEO_ENCODER;
+      else process.env.GAINMAP_VIDEO_ENCODER = originalEncoder;
+    }
+    assert.ok(calls[0]!.args.includes("hevc_videotoolbox"));
+    assert.ok(calls[1]!.args.includes("libx265"));
   });
 
   it("uses the default ffmpeg runner when no runner is injected", async () => {

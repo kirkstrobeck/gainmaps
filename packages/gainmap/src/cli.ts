@@ -32,7 +32,7 @@ Usage
 Input is a file, a directory, or - for image stdin. Directories convert matching
 images and MP4 videos in that folder. Use -R/--recursive for nested trees.
 extract-sdr writes the primary SDR JPEG (first SOI..EOI) from a gain map.
-MP4 output uses ffmpeg/libx265 to convert SDR video to HDR10-style Ultra MP4, not a JPEG gain-map container.
+MP4 output uses ffmpeg to convert SDR video to HDR10-style Ultra MP4; macOS prefers Apple VideoToolbox for QuickTime playback, and other platforms use x265.
 
 Output
   -o, --out, --output <path>

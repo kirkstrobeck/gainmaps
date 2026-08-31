@@ -19,7 +19,7 @@ Quick paths:
 - From this clone: `brew install --HEAD --formula ./Formula/gainmap.rb`
 - Without brew: `cd packages/gainmap && npm install && npm run build && npm link`
 - Docker: `docker build -t gainmap packages/gainmap && docker run --rm -v "$PWD:/work" gainmap photo.jpg`
-- MP4: requires `ffmpeg` with `libx265` in PATH and converts SDR video to HDR10-style Ultra MP4; this is video HDR, not a JPEG gain-map container
+- MP4: requires `ffmpeg`; macOS uses Apple `hevc_videotoolbox` for QuickTime when available, otherwise `libx265` and converts SDR video to HDR10-style Ultra MP4; this is video HDR, not a JPEG gain-map container
 - e2e install tests: `docker build -f packages/gainmap/Dockerfile.e2e .` (from repo root; tests npm, curl, and brew-equivalent paths)
 
 ## Contributing
